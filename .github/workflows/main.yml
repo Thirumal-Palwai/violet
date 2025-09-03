@@ -1,0 +1,29 @@
+name: Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Image Build
+    runs-on: ubuntu-18.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install required packages
+        run: |
+            sudo apt update
+            sudo apt install -y build-essential uuid-dev iasl git nasm gcc-aarch64-linux-gnu bc
+
+      - name: Build an image
+        run: |
+          cd edk2-lavender
+          ./firstrun.sh
+          ./build.sh
+
+      - name: Upload a Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          path: edk2-lavender/uefi.img
