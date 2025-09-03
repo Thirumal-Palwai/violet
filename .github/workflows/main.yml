@@ -19,9 +19,8 @@ jobs:
 
       - name: Build an image
         run: |
+          chmod +x -R .
           cd edk2-lavender
-          chmod +x firstrun.sh
-          chmod +x build.sh
           ./firstrun.sh
           ./build.sh
 
