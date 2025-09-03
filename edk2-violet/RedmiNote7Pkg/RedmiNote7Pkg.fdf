@@ -292,10 +292,10 @@ READ_LOCK_STATUS   = TRUE
     INF ArmPkg/Drivers/TimerDxe/TimerDxe.inf
     INF MdeModulePkg/Universal/WatchdogTimerDxe/WatchdogTimer.inf
 
-    FILE DRIVER = 5e0eae60-eaed-4d75-b8bf-edbbaabc3f09 {
-      SECTION PE32 = RedmiNote7Pkg/Binary/SecurityDxe/SecurityDxe.efi
-      SECTION UI = "SecurityDxe"
-    }
+#    FILE DRIVER = 5e0eae60-eaed-4d75-b8bf-edbbaabc3f09 {
+#      SECTION PE32 = RedmiNote7Pkg/Binary/SecurityDxe/SecurityDxe.efi
+#      SECTION UI = "SecurityDxe"
+#    }
 
     FILE DRIVER = c2f9a4f5-f7b4-43e7-ba99-5ea804cc103a {
       SECTION PE32 = RedmiNote7Pkg/Binary/ASN1X509Dxe/ASN1X509Dxe.efi
@@ -339,11 +339,11 @@ READ_LOCK_STATUS   = TRUE
 
     INF EmbeddedPkg/MetronomeDxe/MetronomeDxe.inf
 
-    FILE DRIVER = 7942a7eb-b7d5-4e2e-b908-831e4de55b58 {
-      SECTION DXE_DEPEX = RedmiNote7Pkg/Binary/GlinkDxe/GlinkDxe.depex
-      SECTION PE32 = RedmiNote7Pkg/Binary/GlinkDxe/GlinkDxe.efi
-      SECTION UI = "GlinkDxe"
-    }
+#    FILE DRIVER = 7942a7eb-b7d5-4e2e-b908-831e4de55b58 {
+#      SECTION DXE_DEPEX = RedmiNote7Pkg/Binary/GlinkDxe/GlinkDxe.depex
+#      SECTION PE32 = RedmiNote7Pkg/Binary/GlinkDxe/GlinkDxe.efi
+#      SECTION UI = "GlinkDxe"
+#    }
 
     FILE DRIVER = e43128a8-8692-42b6-8afa-676158578d18 {
       SECTION DXE_DEPEX = RedmiNote7Pkg/Binary/ULogDxe/ULogDxe.depex
@@ -382,18 +382,18 @@ READ_LOCK_STATUS   = TRUE
     INF MdeModulePkg/Universal/Disk/UnicodeCollation/EnglishDxe/EnglishDxe.inf
     INF MdeModulePkg/Universal/FvSimpleFileSystemDxe/FvSimpleFileSystemDxe.inf
 
-    FILE DRIVER = b003d837-44cc-b38b-7811-deb5ebbd74d8 {
-      SECTION DXE_DEPEX = RedmiNote7Pkg/Binary/QdssDxe/QdssDxe.depex
-      SECTION PE32 = RedmiNote7Pkg/Binary/QdssDxe/QdssDxe.efi
-      SECTION UI = "QdssDxe"
-    }
+#    FILE DRIVER = b003d837-44cc-b38b-7811-deb5ebbd74d8 {
+#      SECTION DXE_DEPEX = RedmiNote7Pkg/Binary/QdssDxe/QdssDxe.depex
+#      SECTION PE32 = RedmiNote7Pkg/Binary/QdssDxe/QdssDxe.efi
+#      SECTION UI = "QdssDxe"
+#    }
     
     #temporarily
-    FILE DRIVER = 02b01ad5-7e59-43e8-a6d8-238180613a5a {
-      SECTION DXE_DEPEX = RedmiNote7Pkg/Binary/EmuVariableRuntimeDxe/EmuVariableRuntimeDxe.depex
-      SECTION PE32 = RedmiNote7Pkg/Binary/EmuVariableRuntimeDxe/EmuVariableRuntimeDxe.efi
-      SECTION UI = "EmuVariableRuntimeDxe"
-    }
+#    FILE DRIVER = 02b01ad5-7e59-43e8-a6d8-238180613a5a {
+#      SECTION DXE_DEPEX = RedmiNote7Pkg/Binary/EmuVariableRuntimeDxe/EmuVariableRuntimeDxe.depex
+#      SECTION PE32 = RedmiNote7Pkg/Binary/EmuVariableRuntimeDxe/EmuVariableRuntimeDxe.efi
+#      SECTION UI = "EmuVariableRuntimeDxe"
+#    }
 
   INF EmbeddedPkg/EmbeddedMonotonicCounter/EmbeddedMonotonicCounter.inf
   INF MdeModulePkg/Universal/ResetSystemRuntimeDxe/ResetSystemRuntimeDxe.inf
@@ -422,11 +422,11 @@ READ_LOCK_STATUS   = TRUE
       SECTION UI = "SPMI"
     }
 
-    FILE DRIVER = 7a32bd23-f735-4f57-aa1a-447d2fe3be0d {
-      SECTION DXE_DEPEX = RedmiNote7Pkg/Binary/SPI/SPI.depex
-      SECTION PE32 = RedmiNote7Pkg/Binary/SPI/SPI.efi
-      SECTION UI = "SPI"
-    }
+#    FILE DRIVER = 7a32bd23-f735-4f57-aa1a-447d2fe3be0d {
+#      SECTION DXE_DEPEX = RedmiNote7Pkg/Binary/SPI/SPI.depex
+#      SECTION PE32 = RedmiNote7Pkg/Binary/SPI/SPI.efi
+#      SECTION UI = "SPI"
+#    }
 
     FILE DRIVER = 5776232e-082d-4b75-9a0e-fe1d13f7a5d9 {
       SECTION DXE_DEPEX = RedmiNote7Pkg/Binary/PmicDxe/PmicDxe.depex
@@ -613,10 +613,10 @@ READ_LOCK_STATUS   = TRUE
     SECTION UI = "EnvDxe"
   }
 
-  FILE DRIVER = 5e0eae60-eaed-4d75-b8bf-edbbaabc3f09 {
-    SECTION PE32 = RedmiNote7Pkg/Binary/SecurityDxe/SecurityDxe.efi
-    SECTION UI = "SecurityDxe"
-  }
+#  FILE DRIVER = 5e0eae60-eaed-4d75-b8bf-edbbaabc3f09 {
+#    SECTION PE32 = RedmiNote7Pkg/Binary/SecurityDxe/SecurityDxe.efi
+#    SECTION UI = "SecurityDxe"
+#  }
 
   FILE DRIVER = c2f9a4f5-f7b4-43e7-ba99-5ea804cc103a {
     SECTION PE32 = RedmiNote7Pkg/Binary/ASN1X509Dxe/ASN1X509Dxe.efi
@@ -658,11 +658,11 @@ READ_LOCK_STATUS   = TRUE
     SECTION UI = "PlatformInfoDxeDriver"
   }
 
-  FILE DRIVER = 7942a7eb-b7d5-4e2e-b908-831e4de55b58 {
-    SECTION DXE_DEPEX = RedmiNote7Pkg/Binary/GlinkDxe/GlinkDxe.depex
-    SECTION PE32 = RedmiNote7Pkg/Binary/GlinkDxe/GlinkDxe.efi
-    SECTION UI = "GlinkDxe"
-  }
+#  FILE DRIVER = 7942a7eb-b7d5-4e2e-b908-831e4de55b58 {
+#    SECTION DXE_DEPEX = RedmiNote7Pkg/Binary/GlinkDxe/GlinkDxe.depex
+#    SECTION PE32 = RedmiNote7Pkg/Binary/GlinkDxe/GlinkDxe.efi
+#    SECTION UI = "GlinkDxe"
+#  }
 
   FILE DRIVER = e43128a8-8692-42b6-8afa-676158578d18 {
     SECTION DXE_DEPEX = RedmiNote7Pkg/Binary/ULogDxe/ULogDxe.depex
@@ -702,17 +702,17 @@ READ_LOCK_STATUS   = TRUE
 
   INF MdeModulePkg/Universal/FvSimpleFileSystemDxe/FvSimpleFileSystemDxe.inf
 
-  FILE DRIVER = b003d837-44cc-b38b-7811-deb5ebbd74d8 {
-    SECTION DXE_DEPEX = RedmiNote7Pkg/Binary/QdssDxe/QdssDxe.depex
-    SECTION PE32 = RedmiNote7Pkg/Binary/QdssDxe/QdssDxe.efi
-    SECTION UI = "QdssDxe"
-  }
+#  FILE DRIVER = b003d837-44cc-b38b-7811-deb5ebbd74d8 {
+#    SECTION DXE_DEPEX = RedmiNote7Pkg/Binary/QdssDxe/QdssDxe.depex
+#    SECTION PE32 = RedmiNote7Pkg/Binary/QdssDxe/QdssDxe.efi
+#    SECTION UI = "QdssDxe"
+#  }
 
-  FILE DRIVER = 02b01ad5-7e59-43e8-a6d8-238180613a5a {
-    SECTION DXE_DEPEX = RedmiNote7Pkg/Binary/EmuVariableRuntimeDxe/EmuVariableRuntimeDxe.depex
-    SECTION PE32 = RedmiNote7Pkg/Binary/EmuVariableRuntimeDxe/EmuVariableRuntimeDxe.efi
-    SECTION UI = "EmuVariableRuntimeDxe"
-  }
+#  FILE DRIVER = 02b01ad5-7e59-43e8-a6d8-238180613a5a {
+#    SECTION DXE_DEPEX = RedmiNote7Pkg/Binary/EmuVariableRuntimeDxe/EmuVariableRuntimeDxe.depex
+#    SECTION PE32 = RedmiNote7Pkg/Binary/EmuVariableRuntimeDxe/EmuVariableRuntimeDxe.efi
+#    SECTION UI = "EmuVariableRuntimeDxe"
+#  }
 
   FILE DRIVER = 8681cc5a-0df6-441e-b4b8-e915c538f067 {
     SECTION DXE_DEPEX = RedmiNote7Pkg/Binary/DALTLMM/DALTLMM.depex
@@ -732,11 +732,11 @@ READ_LOCK_STATUS   = TRUE
     SECTION UI = "SPMI"
   }
 
-  FILE DRIVER = 7a32bd23-f735-4f57-aa1a-447d2fe3be0d {
-    SECTION DXE_DEPEX = RedmiNote7Pkg/Binary/SPI/SPI.depex
-    SECTION PE32 = RedmiNote7Pkg/Binary/SPI/SPI.efi
-    SECTION UI = "SPI"
-  }
+#  FILE DRIVER = 7a32bd23-f735-4f57-aa1a-447d2fe3be0d {
+#    SECTION DXE_DEPEX = RedmiNote7Pkg/Binary/SPI/SPI.depex
+#    SECTION PE32 = RedmiNote7Pkg/Binary/SPI/SPI.efi
+#    SECTION UI = "SPI"
+#  }
 
   FILE DRIVER = 5776232e-082d-4b75-9a0e-fe1d13f7a5d9 {
     SECTION DXE_DEPEX = RedmiNote7Pkg/Binary/PmicDxe/PmicDxe.depex
