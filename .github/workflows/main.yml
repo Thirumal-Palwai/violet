@@ -21,6 +21,9 @@ jobs:
         working-directory: ./edk2-lavender
         run: |
           chmod +x -R .
+          curdir="$PWD"
+          cd ..
+          cd "$curdir"
           ./firstrun.sh
           ./build.sh
 
