@@ -40,8 +40,8 @@ static BROTLI_INLINE HashComposite* FN(Self)(HasherHandle handle) {
 static void FN(Initialize)(
     HasherHandle handle, const BrotliEncoderParams* params) {
   HashComposite* self = FN(Self)(handle);
-  self->ha = 0;
-  self->hb = 0;
+  //self->ha = 0;
+  //self->hb = 0;
   self->params = params;
   /* TODO: Initialize of the hashers is defered to Prepare (and params
      remembered here) because we don't get the one_shot and input_size params
