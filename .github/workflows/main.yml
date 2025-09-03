@@ -19,10 +19,14 @@ jobs:
 
       - name: Build an image
         run: |
+          ls
           chmod +x -R .
+          ls
           cd edk2-lavender
-          ./firstrun.sh
-          ./build.sh
+          ls
+          sh /firstrun.sh
+          ls
+          sh ./build.sh
 
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v4
