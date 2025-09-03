@@ -21,9 +21,9 @@ jobs:
         run: |
           chmod +x -R .
           cd edk2-lavender
-          sh ./firstrun.sh
+          ./firstrun.sh
           ls
-          sh ./build.sh
+          ./build.sh
 
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v4
