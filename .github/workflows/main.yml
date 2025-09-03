@@ -25,6 +25,7 @@ jobs:
           cd ..
           cd "$curdir"
           ./firstrun.sh
+          chmod +x ../edk2/BaseTools/BinWrappers/PosixLike/build
           ./build.sh
 
       - name: Upload a Build Artifact
