@@ -18,11 +18,10 @@ jobs:
             sudo apt install -y build-essential uuid-dev iasl git nasm gcc-aarch64-linux-gnu bc
 
       - name: Build an image
+        working-directory: ./edk2-lavender
         run: |
           chmod +x -R .
-          cd edk2-lavender
           ./firstrun.sh
-          ls
           ./build.sh
 
       - name: Upload a Build Artifact
