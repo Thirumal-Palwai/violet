@@ -195,7 +195,7 @@ def ReadMessage(From, To, ExitFlag,MemTo=None):
                 To(LineStr)
         else:
             break
-        if ExitFlag.isSet():
+        if ExitFlag.is_set():
             break
 
 class MakeSubProc(Popen):
@@ -454,7 +454,7 @@ class BuildTask:
             # indicated to do so, or there's error in running thread
             #
             while (len(BuildTask._PendingQueue) > 0 or len(BuildTask._ReadyQueue) > 0 \
-                   or not ExitFlag.isSet()) and not BuildTask._ErrorFlag.isSet():
+                   or not ExitFlag.is_set()) and not BuildTask._ErrorFlag.is_set():
                 EdkLogger.debug(EdkLogger.DEBUG_8, "Pending Queue (%d), Ready Queue (%d)"
                                 % (len(BuildTask._PendingQueue), len(BuildTask._ReadyQueue)))
 

@@ -721,7 +721,7 @@ def ReadMessage(From, To, ExitFlag):
             To(Line.rstrip().decode(encoding='utf-8', errors='ignore'))
         else:
             break
-        if ExitFlag.isSet():
+        if ExitFlag.is_set():
             break
 
 ##

@@ -898,7 +898,7 @@ class Progressor:
         sys.stdout.write(self.PromptMessage + " ")
         sys.stdout.flush()
         TimeUp = 0.0
-        while not Progressor._StopFlag.isSet():
+        while not Progressor._StopFlag.is_set():
             if TimeUp <= 0.0:
                 sys.stdout.write(self.ProgressChar)
                 sys.stdout.flush()
