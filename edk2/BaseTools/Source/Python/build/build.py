@@ -472,7 +472,7 @@ class BuildTask:
                 BuildTask._PendingQueueLock.release()
 
                 # launch build thread until the maximum number of threads is reached
-                while not BuildTask._ErrorFlag.isSet():
+                while not BuildTask._ErrorFlag.is_set():
                     # empty ready queue, do nothing further
                     if len(BuildTask._ReadyQueue) == 0:
                         break
@@ -496,9 +496,9 @@ class BuildTask:
                 time.sleep(0.01)
 
             # wait for all running threads exit
-            if BuildTask._ErrorFlag.isSet():
+            if BuildTask._ErrorFlag.is_set():
                 EdkLogger.quiet("\nWaiting for all build threads exit...")
-            # while not BuildTask._ErrorFlag.isSet() and \
+            # while not BuildTask._ErrorFlag.is_set() and \
             while len(BuildTask._RunningQueue) > 0:
                 EdkLogger.verbose("Waiting for thread ending...(%d)" % len(BuildTask._RunningQueue))
                 EdkLogger.debug(EdkLogger.DEBUG_8, "Threads [%s]" % ", ".join(Th.getName() for Th in threading.enumerate()))
@@ -529,7 +529,7 @@ class BuildTask:
     #
     @staticmethod
     def IsOnGoing():
-        return not BuildTask._SchedulerStopped.isSet()
+        return not BuildTask._SchedulerStopped.is_set()
 
     ## Abort the build
     @staticmethod
@@ -545,7 +545,7 @@ class BuildTask:
     #
     @staticmethod
     def HasError():
-        return BuildTask._ErrorFlag.isSet()
+        return BuildTask._ErrorFlag.is_set()
 
     ## Get error message in running thread
     #
