@@ -3,7 +3,7 @@
   Protocol/PPI.
 
   Copyright (C) Microsoft Corporation. All rights reserved.
-  Copyright (c) 2019 - 2020, Intel Corporation. All rights reserved.<BR>
+  Copyright (c) 2019 - 2022, Intel Corporation. All rights reserved.<BR>
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
@@ -95,167 +95,11 @@ CryptoServiceNotAvailable (
   ASSERT_EFI_ERROR (EFI_UNSUPPORTED);
 }
 
-//=====================================================================================
+// =====================================================================================
 //    One-Way Cryptographic Hash Primitives
-//=====================================================================================
+// =====================================================================================
 
-/**
-  Retrieves the size, in bytes, of the context buffer required for MD4 hash operations.
-
-  If this interface is not supported, then return zero.
-
-  @return  The size, in bytes, of the context buffer required for MD4 hash operations.
-  @retval  0   This interface is not supported.
-
-**/
-UINTN
-EFIAPI
-Md4GetContextSize (
-  VOID
-  )
-{
-  CALL_CRYPTO_SERVICE (Md4GetContextSize, (), 0);
-}
-
-/**
-  Initializes user-supplied memory pointed by Md4Context as MD4 hash context for
-  subsequent use.
-
-  If Md4Context is NULL, then return FALSE.
-  If this interface is not supported, then return FALSE.
-
-  @param[out]  Md4Context  Pointer to MD4 context being initialized.
-
-  @retval TRUE   MD4 context initialization succeeded.
-  @retval FALSE  MD4 context initialization failed.
-  @retval FALSE  This interface is not supported.
-
-**/
-BOOLEAN
-EFIAPI
-Md4Init (
-  OUT  VOID  *Md4Context
-  )
-{
-  CALL_CRYPTO_SERVICE (Md4Init, (Md4Context), FALSE);
-}
-
-/**
-  Makes a copy of an existing MD4 context.
-
-  If Md4Context is NULL, then return FALSE.
-  If NewMd4Context is NULL, then return FALSE.
-  If this interface is not supported, then return FALSE.
-
-  @param[in]  Md4Context     Pointer to MD4 context being copied.
-  @param[out] NewMd4Context  Pointer to new MD4 context.
-
-  @retval TRUE   MD4 context copy succeeded.
-  @retval FALSE  MD4 context copy failed.
-  @retval FALSE  This interface is not supported.
-
-**/
-BOOLEAN
-EFIAPI
-Md4Duplicate (
-  IN   CONST VOID  *Md4Context,
-  OUT  VOID        *NewMd4Context
-  )
-{
-  CALL_CRYPTO_SERVICE (Md4Duplicate, (Md4Context, NewMd4Context), FALSE);
-}
-
-/**
-  Digests the input data and updates MD4 context.
-
-  This function performs MD4 digest on a data buffer of the specified size.
-  It can be called multiple times to compute the digest of long or discontinuous data streams.
-  MD4 context should be already correctly initialized by Md4Init(), and should not be finalized
-  by Md4Final(). Behavior with invalid context is undefined.
-
-  If Md4Context is NULL, then return FALSE.
-  If this interface is not supported, then return FALSE.
-
-  @param[in, out]  Md4Context  Pointer to the MD4 context.
-  @param[in]       Data        Pointer to the buffer containing the data to be hashed.
-  @param[in]       DataSize    Size of Data buffer in bytes.
-
-  @retval TRUE   MD4 data digest succeeded.
-  @retval FALSE  MD4 data digest failed.
-  @retval FALSE  This interface is not supported.
-
-**/
-BOOLEAN
-EFIAPI
-Md4Update (
-  IN OUT  VOID        *Md4Context,
-  IN      CONST VOID  *Data,
-  IN      UINTN       DataSize
-  )
-{
-  CALL_CRYPTO_SERVICE (Md4Update, (Md4Context, Data, DataSize), FALSE);
-}
-
-/**
-  Completes computation of the MD4 digest value.
-
-  This function completes MD4 hash computation and retrieves the digest value into
-  the specified memory. After this function has been called, the MD4 context cannot
-  be used again.
-  MD4 context should be already correctly initialized by Md4Init(), and should not be
-  finalized by Md4Final(). Behavior with invalid MD4 context is undefined.
-
-  If Md4Context is NULL, then return FALSE.
-  If HashValue is NULL, then return FALSE.
-  If this interface is not supported, then return FALSE.
-
-  @param[in, out]  Md4Context  Pointer to the MD4 context.
-  @param[out]      HashValue   Pointer to a buffer that receives the MD4 digest
-                               value (16 bytes).
-
-  @retval TRUE   MD4 digest computation succeeded.
-  @retval FALSE  MD4 digest computation failed.
-  @retval FALSE  This interface is not supported.
-
-**/
-BOOLEAN
-EFIAPI
-Md4Final (
-  IN OUT  VOID   *Md4Context,
-  OUT     UINT8  *HashValue
-  )
-{
-  CALL_CRYPTO_SERVICE (Md4Final, (Md4Context, HashValue), FALSE);
-}
-
-/**
-  Computes the MD4 message digest of a input data buffer.
-
-  This function performs the MD4 message digest of a given data buffer, and places
-  the digest value into the specified memory.
-
-  If this interface is not supported, then return FALSE.
-
-  @param[in]   Data        Pointer to the buffer containing the data to be hashed.
-  @param[in]   DataSize    Size of Data buffer in bytes.
-  @param[out]  HashValue   Pointer to a buffer that receives the MD4 digest
-                           value (16 bytes).
-
-  @retval TRUE   MD4 digest computation succeeded.
-  @retval FALSE  MD4 digest computation failed.
-  @retval FALSE  This interface is not supported.
-
-**/
-BOOLEAN
-EFIAPI
-Md4HashAll (
-  IN   CONST VOID  *Data,
-  IN   UINTN       DataSize,
-  OUT  UINT8       *HashValue
-  )
-{
-  CALL_CRYPTO_SERVICE (Md4HashAll, (Data, DataSize, HashValue), FALSE);
-}
+#ifdef ENABLE_MD5_DEPRECATED_INTERFACES
 
 /**
   Retrieves the size, in bytes, of the context buffer required for MD5 hash operations.
@@ -415,6 +259,10 @@ Md5HashAll (
   CALL_CRYPTO_SERVICE (Md5HashAll, (Data, DataSize, HashValue), FALSE);
 }
 
+#endif
+
+#ifndef DISABLE_SHA1_DEPRECATED_INTERFACES
+
 /**
   Retrieves the size, in bytes, of the context buffer required for SHA-1 hash operations.
 
@@ -572,6 +420,8 @@ Sha1HashAll (
 {
   CALL_CRYPTO_SERVICE (Sha1HashAll, (Data, DataSize, HashValue), FALSE);
 }
+
+#endif
 
 /**
   Retrieves the size, in bytes, of the context buffer required for SHA-256 hash operations.
@@ -1021,6 +871,38 @@ Sha512HashAll (
 }
 
 /**
+  Parallel hash function ParallelHash256, as defined in NIST's Special Publication 800-185,
+  published December 2016.
+
+  @param[in]   Input            Pointer to the input message (X).
+  @param[in]   InputByteLen     The number(>0) of input bytes provided for the input data.
+  @param[in]   BlockSize        The size of each block (B).
+  @param[out]  Output           Pointer to the output buffer.
+  @param[in]   OutputByteLen    The desired number of output bytes (L).
+  @param[in]   Customization    Pointer to the customization string (S).
+  @param[in]   CustomByteLen    The length of the customization string in bytes.
+
+  @retval TRUE   ParallelHash256 digest computation succeeded.
+  @retval FALSE  ParallelHash256 digest computation failed.
+  @retval FALSE  This interface is not supported.
+
+**/
+BOOLEAN
+EFIAPI
+ParallelHash256HashAll (
+  IN CONST VOID   *Input,
+  IN       UINTN  InputByteLen,
+  IN       UINTN  BlockSize,
+  OUT      VOID   *Output,
+  IN       UINTN  OutputByteLen,
+  IN CONST VOID   *Customization,
+  IN       UINTN  CustomByteLen
+  )
+{
+  CALL_CRYPTO_SERVICE (ParallelHash256HashAll, (Input, InputByteLen, BlockSize, Output, OutputByteLen, Customization, CustomByteLen), FALSE);
+}
+
+/**
   Retrieves the size, in bytes, of the context buffer required for SM3 hash operations.
 
   @return  The size, in bytes, of the context buffer required for SM3 hash operations.
@@ -1169,311 +1051,9 @@ Sm3HashAll (
   CALL_CRYPTO_SERVICE (Sm3HashAll, (Data, DataSize, HashValue), FALSE);
 }
 
-//=====================================================================================
+// =====================================================================================
 //    MAC (Message Authentication Code) Primitive
-//=====================================================================================
-
-/**
-  Allocates and initializes one HMAC_CTX context for subsequent HMAC-MD5 use.
-
-  If this interface is not supported, then return NULL.
-
-  @return  Pointer to the HMAC_CTX context that has been initialized.
-           If the allocations fails, HmacMd5New() returns NULL.
-  @retval  NULL  This interface is not supported.
-
-**/
-VOID *
-EFIAPI
-HmacMd5New (
-  VOID
-  )
-{
-  CALL_CRYPTO_SERVICE (HmacMd5New, (), NULL);
-}
-
-/**
-  Release the specified HMAC_CTX context.
-
-  If this interface is not supported, then do nothing.
-
-  @param[in]  HmacMd5Ctx  Pointer to the HMAC_CTX context to be released.
-
-**/
-VOID
-EFIAPI
-HmacMd5Free (
-  IN  VOID  *HmacMd5Ctx
-  )
-{
-  CALL_VOID_CRYPTO_SERVICE (HmacMd5Free, (HmacMd5Ctx));
-}
-
-/**
-  Set user-supplied key for subsequent use. It must be done before any
-  calling to HmacMd5Update().
-
-  If HmacMd5Context is NULL, then return FALSE.
-  If this interface is not supported, then return FALSE.
-
-  @param[out]  HmacMd5Context  Pointer to HMAC-MD5 context.
-  @param[in]   Key             Pointer to the user-supplied key.
-  @param[in]   KeySize         Key size in bytes.
-
-  @retval TRUE   Key is set successfully.
-  @retval FALSE  Key is set unsuccessfully.
-  @retval FALSE  This interface is not supported.
-
-**/
-BOOLEAN
-EFIAPI
-HmacMd5SetKey (
-  OUT  VOID         *HmacMd5Context,
-  IN   CONST UINT8  *Key,
-  IN   UINTN        KeySize
-  )
-{
-  CALL_CRYPTO_SERVICE (HmacMd5SetKey, (HmacMd5Context, Key, KeySize), FALSE);
-}
-
-/**
-  Makes a copy of an existing HMAC-MD5 context.
-
-  If HmacMd5Context is NULL, then return FALSE.
-  If NewHmacMd5Context is NULL, then return FALSE.
-  If this interface is not supported, then return FALSE.
-
-  @param[in]  HmacMd5Context     Pointer to HMAC-MD5 context being copied.
-  @param[out] NewHmacMd5Context  Pointer to new HMAC-MD5 context.
-
-  @retval TRUE   HMAC-MD5 context copy succeeded.
-  @retval FALSE  HMAC-MD5 context copy failed.
-  @retval FALSE  This interface is not supported.
-
-**/
-BOOLEAN
-EFIAPI
-HmacMd5Duplicate (
-  IN   CONST VOID  *HmacMd5Context,
-  OUT  VOID        *NewHmacMd5Context
-  )
-{
-  CALL_CRYPTO_SERVICE (HmacMd5Duplicate, (HmacMd5Context, NewHmacMd5Context), FALSE);
-}
-
-/**
-  Digests the input data and updates HMAC-MD5 context.
-
-  This function performs HMAC-MD5 digest on a data buffer of the specified size.
-  It can be called multiple times to compute the digest of long or discontinuous data streams.
-  HMAC-MD5 context should be initialized by HmacMd5New(), and should not be finalized by
-  HmacMd5Final(). Behavior with invalid context is undefined.
-
-  If HmacMd5Context is NULL, then return FALSE.
-  If this interface is not supported, then return FALSE.
-
-  @param[in, out]  HmacMd5Context  Pointer to the HMAC-MD5 context.
-  @param[in]       Data            Pointer to the buffer containing the data to be digested.
-  @param[in]       DataSize        Size of Data buffer in bytes.
-
-  @retval TRUE   HMAC-MD5 data digest succeeded.
-  @retval FALSE  HMAC-MD5 data digest failed.
-  @retval FALSE  This interface is not supported.
-
-**/
-BOOLEAN
-EFIAPI
-HmacMd5Update (
-  IN OUT  VOID        *HmacMd5Context,
-  IN      CONST VOID  *Data,
-  IN      UINTN       DataSize
-  )
-{
-  CALL_CRYPTO_SERVICE (HmacMd5Update, (HmacMd5Context, Data, DataSize), FALSE);
-}
-
-/**
-  Completes computation of the HMAC-MD5 digest value.
-
-  This function completes HMAC-MD5 hash computation and retrieves the digest value into
-  the specified memory. After this function has been called, the HMAC-MD5 context cannot
-  be used again.
-  HMAC-MD5 context should be initialized by HmacMd5New(), and should not be finalized by
-  HmacMd5Final(). Behavior with invalid HMAC-MD5 context is undefined.
-
-  If HmacMd5Context is NULL, then return FALSE.
-  If HmacValue is NULL, then return FALSE.
-  If this interface is not supported, then return FALSE.
-
-  @param[in, out]  HmacMd5Context  Pointer to the HMAC-MD5 context.
-  @param[out]      HmacValue       Pointer to a buffer that receives the HMAC-MD5 digest
-                                   value (16 bytes).
-
-  @retval TRUE   HMAC-MD5 digest computation succeeded.
-  @retval FALSE  HMAC-MD5 digest computation failed.
-  @retval FALSE  This interface is not supported.
-
-**/
-BOOLEAN
-EFIAPI
-HmacMd5Final (
-  IN OUT  VOID   *HmacMd5Context,
-  OUT     UINT8  *HmacValue
-  )
-{
-  CALL_CRYPTO_SERVICE (HmacMd5Final, (HmacMd5Context, HmacValue), FALSE);
-}
-
-/**
-  Allocates and initializes one HMAC_CTX context for subsequent HMAC-SHA1 use.
-
-  If this interface is not supported, then return NULL.
-
-  @return  Pointer to the HMAC_CTX context that has been initialized.
-           If the allocations fails, HmacSha1New() returns NULL.
-  @return  NULL   This interface is not supported.
-
-**/
-VOID *
-EFIAPI
-HmacSha1New (
-  VOID
-  )
-{
-  CALL_CRYPTO_SERVICE (HmacSha1New, (), NULL);
-}
-
-/**
-  Release the specified HMAC_CTX context.
-
-  If this interface is not supported, then do nothing.
-
-  @param[in]  HmacSha1Ctx  Pointer to the HMAC_CTX context to be released.
-
-**/
-VOID
-EFIAPI
-HmacSha1Free (
-  IN  VOID  *HmacSha1Ctx
-  )
-{
-  CALL_VOID_CRYPTO_SERVICE (HmacSha1Free, (HmacSha1Ctx));
-}
-
-/**
-  Set user-supplied key for subsequent use. It must be done before any
-  calling to HmacSha1Update().
-
-  If HmacSha1Context is NULL, then return FALSE.
-  If this interface is not supported, then return FALSE.
-
-  @param[out]  HmacSha1Context  Pointer to HMAC-SHA1 context.
-  @param[in]   Key              Pointer to the user-supplied key.
-  @param[in]   KeySize          Key size in bytes.
-
-  @retval TRUE   The Key is set successfully.
-  @retval FALSE  The Key is set unsuccessfully.
-  @retval FALSE  This interface is not supported.
-
-**/
-BOOLEAN
-EFIAPI
-HmacSha1SetKey (
-  OUT  VOID         *HmacSha1Context,
-  IN   CONST UINT8  *Key,
-  IN   UINTN        KeySize
-  )
-{
-  CALL_CRYPTO_SERVICE (HmacSha1SetKey, (HmacSha1Context, Key, KeySize), FALSE);
-}
-
-/**
-  Makes a copy of an existing HMAC-SHA1 context.
-
-  If HmacSha1Context is NULL, then return FALSE.
-  If NewHmacSha1Context is NULL, then return FALSE.
-  If this interface is not supported, then return FALSE.
-
-  @param[in]  HmacSha1Context     Pointer to HMAC-SHA1 context being copied.
-  @param[out] NewHmacSha1Context  Pointer to new HMAC-SHA1 context.
-
-  @retval TRUE   HMAC-SHA1 context copy succeeded.
-  @retval FALSE  HMAC-SHA1 context copy failed.
-  @retval FALSE  This interface is not supported.
-
-**/
-BOOLEAN
-EFIAPI
-HmacSha1Duplicate (
-  IN   CONST VOID  *HmacSha1Context,
-  OUT  VOID        *NewHmacSha1Context
-  )
-{
-  CALL_CRYPTO_SERVICE (HmacSha1Duplicate, (HmacSha1Context, NewHmacSha1Context), FALSE);
-}
-
-/**
-  Digests the input data and updates HMAC-SHA1 context.
-
-  This function performs HMAC-SHA1 digest on a data buffer of the specified size.
-  It can be called multiple times to compute the digest of long or discontinuous data streams.
-  HMAC-SHA1 context should be initialized by HmacSha1New(), and should not be finalized by
-  HmacSha1Final(). Behavior with invalid context is undefined.
-
-  If HmacSha1Context is NULL, then return FALSE.
-  If this interface is not supported, then return FALSE.
-
-  @param[in, out]  HmacSha1Context Pointer to the HMAC-SHA1 context.
-  @param[in]       Data            Pointer to the buffer containing the data to be digested.
-  @param[in]       DataSize        Size of Data buffer in bytes.
-
-  @retval TRUE   HMAC-SHA1 data digest succeeded.
-  @retval FALSE  HMAC-SHA1 data digest failed.
-  @retval FALSE  This interface is not supported.
-
-**/
-BOOLEAN
-EFIAPI
-HmacSha1Update (
-  IN OUT  VOID        *HmacSha1Context,
-  IN      CONST VOID  *Data,
-  IN      UINTN       DataSize
-  )
-{
-  CALL_CRYPTO_SERVICE (HmacSha1Update, (HmacSha1Context, Data, DataSize), FALSE);
-}
-
-/**
-  Completes computation of the HMAC-SHA1 digest value.
-
-  This function completes HMAC-SHA1 hash computation and retrieves the digest value into
-  the specified memory. After this function has been called, the HMAC-SHA1 context cannot
-  be used again.
-  HMAC-SHA1 context should be initialized by HmacSha1New(), and should not be finalized
-  by HmacSha1Final(). Behavior with invalid HMAC-SHA1 context is undefined.
-
-  If HmacSha1Context is NULL, then return FALSE.
-  If HmacValue is NULL, then return FALSE.
-  If this interface is not supported, then return FALSE.
-
-  @param[in, out]  HmacSha1Context  Pointer to the HMAC-SHA1 context.
-  @param[out]      HmacValue        Pointer to a buffer that receives the HMAC-SHA1 digest
-                                    value (20 bytes).
-
-  @retval TRUE   HMAC-SHA1 digest computation succeeded.
-  @retval FALSE  HMAC-SHA1 digest computation failed.
-  @retval FALSE  This interface is not supported.
-
-**/
-BOOLEAN
-EFIAPI
-HmacSha1Final (
-  IN OUT  VOID   *HmacSha1Context,
-  OUT     UINT8  *HmacValue
-  )
-{
-  CALL_CRYPTO_SERVICE (HmacSha1Final, (HmacSha1Context, HmacValue), FALSE);
-}
+// =====================================================================================
 
 /**
   Allocates and initializes one HMAC_CTX context for subsequent HMAC-SHA256 use.
@@ -1621,223 +1201,9 @@ HmacSha256Final (
   CALL_CRYPTO_SERVICE (HmacSha256Final, (HmacSha256Context, HmacValue), FALSE);
 }
 
-//=====================================================================================
+// =====================================================================================
 //    Symmetric Cryptography Primitive
-//=====================================================================================
-
-/**
-  Retrieves the size, in bytes, of the context buffer required for TDES operations.
-
-  If this interface is not supported, then return zero.
-
-  @return  The size, in bytes, of the context buffer required for TDES operations.
-  @retval  0   This interface is not supported.
-
-**/
-UINTN
-EFIAPI
-TdesGetContextSize (
-  VOID
-  )
-{
-  CALL_CRYPTO_SERVICE (TdesGetContextSize, (), 0);
-}
-
-/**
-  Initializes user-supplied memory as TDES context for subsequent use.
-
-  This function initializes user-supplied memory pointed by TdesContext as TDES context.
-  In addition, it sets up all TDES key materials for subsequent encryption and decryption
-  operations.
-  There are 3 key options as follows:
-  KeyLength = 64,  Keying option 1: K1 == K2 == K3 (Backward compatibility with DES)
-  KeyLength = 128, Keying option 2: K1 != K2 and K3 = K1 (Less Security)
-  KeyLength = 192  Keying option 3: K1 != K2 != K3 (Strongest)
-
-  If TdesContext is NULL, then return FALSE.
-  If Key is NULL, then return FALSE.
-  If KeyLength is not valid, then return FALSE.
-  If this interface is not supported, then return FALSE.
-
-  @param[out]  TdesContext  Pointer to TDES context being initialized.
-  @param[in]   Key          Pointer to the user-supplied TDES key.
-  @param[in]   KeyLength    Length of TDES key in bits.
-
-  @retval TRUE   TDES context initialization succeeded.
-  @retval FALSE  TDES context initialization failed.
-  @retval FALSE  This interface is not supported.
-
-**/
-BOOLEAN
-EFIAPI
-TdesInit (
-  OUT  VOID         *TdesContext,
-  IN   CONST UINT8  *Key,
-  IN   UINTN        KeyLength
-  )
-{
-  CALL_CRYPTO_SERVICE (TdesInit, (TdesContext, Key, KeyLength), FALSE);
-}
-
-/**
-  Performs TDES encryption on a data buffer of the specified size in ECB mode.
-
-  This function performs TDES encryption on data buffer pointed by Input, of specified
-  size of InputSize, in ECB mode.
-  InputSize must be multiple of block size (8 bytes). This function does not perform
-  padding. Caller must perform padding, if necessary, to ensure valid input data size.
-  TdesContext should be already correctly initialized by TdesInit(). Behavior with
-  invalid TDES context is undefined.
-
-  If TdesContext is NULL, then return FALSE.
-  If Input is NULL, then return FALSE.
-  If InputSize is not multiple of block size (8 bytes), then return FALSE.
-  If Output is NULL, then return FALSE.
-  If this interface is not supported, then return FALSE.
-
-  @param[in]   TdesContext  Pointer to the TDES context.
-  @param[in]   Input        Pointer to the buffer containing the data to be encrypted.
-  @param[in]   InputSize    Size of the Input buffer in bytes.
-  @param[out]  Output       Pointer to a buffer that receives the TDES encryption output.
-
-  @retval TRUE   TDES encryption succeeded.
-  @retval FALSE  TDES encryption failed.
-  @retval FALSE  This interface is not supported.
-
-**/
-BOOLEAN
-EFIAPI
-TdesEcbEncrypt (
-  IN   VOID         *TdesContext,
-  IN   CONST UINT8  *Input,
-  IN   UINTN        InputSize,
-  OUT  UINT8        *Output
-  )
-{
-  CALL_CRYPTO_SERVICE (TdesEcbEncrypt, (TdesContext, Input, InputSize, Output), FALSE);
-}
-
-/**
-  Performs TDES decryption on a data buffer of the specified size in ECB mode.
-
-  This function performs TDES decryption on data buffer pointed by Input, of specified
-  size of InputSize, in ECB mode.
-  InputSize must be multiple of block size (8 bytes). This function does not perform
-  padding. Caller must perform padding, if necessary, to ensure valid input data size.
-  TdesContext should be already correctly initialized by TdesInit(). Behavior with
-  invalid TDES context is undefined.
-
-  If TdesContext is NULL, then return FALSE.
-  If Input is NULL, then return FALSE.
-  If InputSize is not multiple of block size (8 bytes), then return FALSE.
-  If Output is NULL, then return FALSE.
-  If this interface is not supported, then return FALSE.
-
-  @param[in]   TdesContext  Pointer to the TDES context.
-  @param[in]   Input        Pointer to the buffer containing the data to be decrypted.
-  @param[in]   InputSize    Size of the Input buffer in bytes.
-  @param[out]  Output       Pointer to a buffer that receives the TDES decryption output.
-
-  @retval TRUE   TDES decryption succeeded.
-  @retval FALSE  TDES decryption failed.
-  @retval FALSE  This interface is not supported.
-
-**/
-BOOLEAN
-EFIAPI
-TdesEcbDecrypt (
-  IN   VOID         *TdesContext,
-  IN   CONST UINT8  *Input,
-  IN   UINTN        InputSize,
-  OUT  UINT8        *Output
-  )
-{
-  CALL_CRYPTO_SERVICE (TdesEcbDecrypt, (TdesContext, Input, InputSize, Output), FALSE);
-}
-
-/**
-  Performs TDES encryption on a data buffer of the specified size in CBC mode.
-
-  This function performs TDES encryption on data buffer pointed by Input, of specified
-  size of InputSize, in CBC mode.
-  InputSize must be multiple of block size (8 bytes). This function does not perform
-  padding. Caller must perform padding, if necessary, to ensure valid input data size.
-  Initialization vector should be one block size (8 bytes).
-  TdesContext should be already correctly initialized by TdesInit(). Behavior with
-  invalid TDES context is undefined.
-
-  If TdesContext is NULL, then return FALSE.
-  If Input is NULL, then return FALSE.
-  If InputSize is not multiple of block size (8 bytes), then return FALSE.
-  If Ivec is NULL, then return FALSE.
-  If Output is NULL, then return FALSE.
-  If this interface is not supported, then return FALSE.
-
-  @param[in]   TdesContext  Pointer to the TDES context.
-  @param[in]   Input        Pointer to the buffer containing the data to be encrypted.
-  @param[in]   InputSize    Size of the Input buffer in bytes.
-  @param[in]   Ivec         Pointer to initialization vector.
-  @param[out]  Output       Pointer to a buffer that receives the TDES encryption output.
-
-  @retval TRUE   TDES encryption succeeded.
-  @retval FALSE  TDES encryption failed.
-  @retval FALSE  This interface is not supported.
-
-**/
-BOOLEAN
-EFIAPI
-TdesCbcEncrypt (
-  IN   VOID         *TdesContext,
-  IN   CONST UINT8  *Input,
-  IN   UINTN        InputSize,
-  IN   CONST UINT8  *Ivec,
-  OUT  UINT8        *Output
-  )
-{
-  CALL_CRYPTO_SERVICE (TdesCbcEncrypt, (TdesContext, Input, InputSize, Ivec, Output), FALSE);
-}
-
-/**
-  Performs TDES decryption on a data buffer of the specified size in CBC mode.
-
-  This function performs TDES decryption on data buffer pointed by Input, of specified
-  size of InputSize, in CBC mode.
-  InputSize must be multiple of block size (8 bytes). This function does not perform
-  padding. Caller must perform padding, if necessary, to ensure valid input data size.
-  Initialization vector should be one block size (8 bytes).
-  TdesContext should be already correctly initialized by TdesInit(). Behavior with
-  invalid TDES context is undefined.
-
-  If TdesContext is NULL, then return FALSE.
-  If Input is NULL, then return FALSE.
-  If InputSize is not multiple of block size (8 bytes), then return FALSE.
-  If Ivec is NULL, then return FALSE.
-  If Output is NULL, then return FALSE.
-  If this interface is not supported, then return FALSE.
-
-  @param[in]   TdesContext  Pointer to the TDES context.
-  @param[in]   Input        Pointer to the buffer containing the data to be encrypted.
-  @param[in]   InputSize    Size of the Input buffer in bytes.
-  @param[in]   Ivec         Pointer to initialization vector.
-  @param[out]  Output       Pointer to a buffer that receives the TDES encryption output.
-
-  @retval TRUE   TDES decryption succeeded.
-  @retval FALSE  TDES decryption failed.
-  @retval FALSE  This interface is not supported.
-
-**/
-BOOLEAN
-EFIAPI
-TdesCbcDecrypt (
-  IN   VOID         *TdesContext,
-  IN   CONST UINT8  *Input,
-  IN   UINTN        InputSize,
-  IN   CONST UINT8  *Ivec,
-  OUT  UINT8        *Output
-  )
-{
-  CALL_CRYPTO_SERVICE (TdesCbcDecrypt, (TdesContext, Input, InputSize, Ivec, Output), FALSE);
-}
+// =====================================================================================
 
 /**
   Retrieves the size, in bytes, of the context buffer required for AES operations.
@@ -1888,82 +1254,6 @@ AesInit (
   )
 {
   CALL_CRYPTO_SERVICE (AesInit, (AesContext, Key, KeyLength), FALSE);
-}
-
-/**
-  Performs AES encryption on a data buffer of the specified size in ECB mode.
-
-  This function performs AES encryption on data buffer pointed by Input, of specified
-  size of InputSize, in ECB mode.
-  InputSize must be multiple of block size (16 bytes). This function does not perform
-  padding. Caller must perform padding, if necessary, to ensure valid input data size.
-  AesContext should be already correctly initialized by AesInit(). Behavior with
-  invalid AES context is undefined.
-
-  If AesContext is NULL, then return FALSE.
-  If Input is NULL, then return FALSE.
-  If InputSize is not multiple of block size (16 bytes), then return FALSE.
-  If Output is NULL, then return FALSE.
-  If this interface is not supported, then return FALSE.
-
-  @param[in]   AesContext  Pointer to the AES context.
-  @param[in]   Input       Pointer to the buffer containing the data to be encrypted.
-  @param[in]   InputSize   Size of the Input buffer in bytes.
-  @param[out]  Output      Pointer to a buffer that receives the AES encryption output.
-
-  @retval TRUE   AES encryption succeeded.
-  @retval FALSE  AES encryption failed.
-  @retval FALSE  This interface is not supported.
-
-**/
-BOOLEAN
-EFIAPI
-AesEcbEncrypt (
-  IN   VOID         *AesContext,
-  IN   CONST UINT8  *Input,
-  IN   UINTN        InputSize,
-  OUT  UINT8        *Output
-  )
-{
-  CALL_CRYPTO_SERVICE (AesEcbEncrypt, (AesContext, Input, InputSize, Output), FALSE);
-}
-
-/**
-  Performs AES decryption on a data buffer of the specified size in ECB mode.
-
-  This function performs AES decryption on data buffer pointed by Input, of specified
-  size of InputSize, in ECB mode.
-  InputSize must be multiple of block size (16 bytes). This function does not perform
-  padding. Caller must perform padding, if necessary, to ensure valid input data size.
-  AesContext should be already correctly initialized by AesInit(). Behavior with
-  invalid AES context is undefined.
-
-  If AesContext is NULL, then return FALSE.
-  If Input is NULL, then return FALSE.
-  If InputSize is not multiple of block size (16 bytes), then return FALSE.
-  If Output is NULL, then return FALSE.
-  If this interface is not supported, then return FALSE.
-
-  @param[in]   AesContext  Pointer to the AES context.
-  @param[in]   Input       Pointer to the buffer containing the data to be decrypted.
-  @param[in]   InputSize   Size of the Input buffer in bytes.
-  @param[out]  Output      Pointer to a buffer that receives the AES decryption output.
-
-  @retval TRUE   AES decryption succeeded.
-  @retval FALSE  AES decryption failed.
-  @retval FALSE  This interface is not supported.
-
-**/
-BOOLEAN
-EFIAPI
-AesEcbDecrypt (
-  IN   VOID         *AesContext,
-  IN   CONST UINT8  *Input,
-  IN   UINTN        InputSize,
-  OUT  UINT8        *Output
-  )
-{
-  CALL_CRYPTO_SERVICE (AesEcbDecrypt, (AesContext, Input, InputSize, Output), FALSE);
 }
 
 /**
@@ -2050,156 +1340,9 @@ AesCbcDecrypt (
   CALL_CRYPTO_SERVICE (AesCbcDecrypt, (AesContext, Input, InputSize, Ivec, Output), FALSE);
 }
 
-/**
-  Retrieves the size, in bytes, of the context buffer required for ARC4 operations.
-
-  If this interface is not supported, then return zero.
-
-  @return  The size, in bytes, of the context buffer required for ARC4 operations.
-  @retval  0   This interface is not supported.
-
-**/
-UINTN
-EFIAPI
-Arc4GetContextSize (
-  VOID
-  )
-{
-  CALL_CRYPTO_SERVICE (Arc4GetContextSize, (), 0);
-}
-
-/**
-  Initializes user-supplied memory as ARC4 context for subsequent use.
-
-  This function initializes user-supplied memory pointed by Arc4Context as ARC4 context.
-  In addition, it sets up all ARC4 key materials for subsequent encryption and decryption
-  operations.
-
-  If Arc4Context is NULL, then return FALSE.
-  If Key is NULL, then return FALSE.
-  If KeySize does not in the range of [5, 256] bytes, then return FALSE.
-  If this interface is not supported, then return FALSE.
-
-  @param[out]  Arc4Context  Pointer to ARC4 context being initialized.
-  @param[in]   Key          Pointer to the user-supplied ARC4 key.
-  @param[in]   KeySize      Size of ARC4 key in bytes.
-
-  @retval TRUE   ARC4 context initialization succeeded.
-  @retval FALSE  ARC4 context initialization failed.
-  @retval FALSE  This interface is not supported.
-
-**/
-BOOLEAN
-EFIAPI
-Arc4Init (
-  OUT  VOID         *Arc4Context,
-  IN   CONST UINT8  *Key,
-  IN   UINTN        KeySize
-  )
-{
-  CALL_CRYPTO_SERVICE (Arc4Init, (Arc4Context, Key, KeySize), FALSE);
-}
-
-/**
-  Performs ARC4 encryption on a data buffer of the specified size.
-
-  This function performs ARC4 encryption on data buffer pointed by Input, of specified
-  size of InputSize.
-  Arc4Context should be already correctly initialized by Arc4Init(). Behavior with
-  invalid ARC4 context is undefined.
-
-  If Arc4Context is NULL, then return FALSE.
-  If Input is NULL, then return FALSE.
-  If Output is NULL, then return FALSE.
-  If this interface is not supported, then return FALSE.
-
-  @param[in, out]  Arc4Context  Pointer to the ARC4 context.
-  @param[in]       Input        Pointer to the buffer containing the data to be encrypted.
-  @param[in]       InputSize    Size of the Input buffer in bytes.
-  @param[out]      Output       Pointer to a buffer that receives the ARC4 encryption output.
-
-  @retval TRUE   ARC4 encryption succeeded.
-  @retval FALSE  ARC4 encryption failed.
-  @retval FALSE  This interface is not supported.
-
-**/
-BOOLEAN
-EFIAPI
-Arc4Encrypt (
-  IN OUT  VOID         *Arc4Context,
-  IN      CONST UINT8  *Input,
-  IN      UINTN        InputSize,
-  OUT     UINT8        *Output
-  )
-{
-  CALL_CRYPTO_SERVICE (Arc4Encrypt, (Arc4Context, Input, InputSize, Output), FALSE);
-}
-
-/**
-  Performs ARC4 decryption on a data buffer of the specified size.
-
-  This function performs ARC4 decryption on data buffer pointed by Input, of specified
-  size of InputSize.
-  Arc4Context should be already correctly initialized by Arc4Init(). Behavior with
-  invalid ARC4 context is undefined.
-
-  If Arc4Context is NULL, then return FALSE.
-  If Input is NULL, then return FALSE.
-  If Output is NULL, then return FALSE.
-  If this interface is not supported, then return FALSE.
-
-  @param[in, out]  Arc4Context  Pointer to the ARC4 context.
-  @param[in]       Input        Pointer to the buffer containing the data to be decrypted.
-  @param[in]       InputSize    Size of the Input buffer in bytes.
-  @param[out]      Output       Pointer to a buffer that receives the ARC4 decryption output.
-
-  @retval TRUE   ARC4 decryption succeeded.
-  @retval FALSE  ARC4 decryption failed.
-  @retval FALSE  This interface is not supported.
-
-**/
-BOOLEAN
-EFIAPI
-Arc4Decrypt (
-  IN OUT  VOID   *Arc4Context,
-  IN      UINT8  *Input,
-  IN      UINTN  InputSize,
-  OUT     UINT8  *Output
-  )
-{
-  CALL_CRYPTO_SERVICE (Arc4Decrypt, (Arc4Context, Input, InputSize, Output), FALSE);
-}
-
-/**
-  Resets the ARC4 context to the initial state.
-
-  The function resets the ARC4 context to the state it had immediately after the
-  ARC4Init() function call.
-  Contrary to ARC4Init(), Arc4Reset() requires no secret key as input, but ARC4 context
-  should be already correctly initialized by ARC4Init().
-
-  If Arc4Context is NULL, then return FALSE.
-  If this interface is not supported, then return FALSE.
-
-  @param[in, out]  Arc4Context  Pointer to the ARC4 context.
-
-  @retval TRUE   ARC4 reset succeeded.
-  @retval FALSE  ARC4 reset failed.
-  @retval FALSE  This interface is not supported.
-
-**/
-BOOLEAN
-EFIAPI
-Arc4Reset (
-  IN OUT  VOID  *Arc4Context
-  )
-{
-  CALL_CRYPTO_SERVICE (Arc4Reset, (Arc4Context), FALSE);
-}
-
-//=====================================================================================
+// =====================================================================================
 //    Asymmetric Cryptography Primitive
-//=====================================================================================
+// =====================================================================================
 
 /**
   Allocates and initializes one RSA context for subsequent use.
@@ -2446,6 +1589,84 @@ RsaPkcs1Verify (
 }
 
 /**
+  Verifies the RSA signature with RSASSA-PSS signature scheme defined in RFC 8017.
+  Implementation determines salt length automatically from the signature encoding.
+  Mask generation function is the same as the message digest algorithm.
+  Salt length should be equal to digest length.
+
+  @param[in]  RsaContext      Pointer to RSA context for signature verification.
+  @param[in]  Message         Pointer to octet message to be verified.
+  @param[in]  MsgSize         Size of the message in bytes.
+  @param[in]  Signature       Pointer to RSASSA-PSS signature to be verified.
+  @param[in]  SigSize         Size of signature in bytes.
+  @param[in]  DigestLen       Length of digest for RSA operation.
+  @param[in]  SaltLen         Salt length for PSS encoding.
+
+  @retval  TRUE   Valid signature encoded in RSASSA-PSS.
+  @retval  FALSE  Invalid signature or invalid RSA context.
+
+**/
+BOOLEAN
+EFIAPI
+RsaPssVerify (
+  IN  VOID         *RsaContext,
+  IN  CONST UINT8  *Message,
+  IN  UINTN        MsgSize,
+  IN  CONST UINT8  *Signature,
+  IN  UINTN        SigSize,
+  IN  UINT16       DigestLen,
+  IN  UINT16       SaltLen
+  )
+{
+  CALL_CRYPTO_SERVICE (RsaPssVerify, (RsaContext, Message, MsgSize, Signature, SigSize, DigestLen, SaltLen), FALSE);
+}
+
+/**
+  This function carries out the RSA-SSA signature generation with EMSA-PSS encoding scheme defined in
+  RFC 8017.
+  Mask generation function is the same as the message digest algorithm.
+  If the Signature buffer is too small to hold the contents of signature, FALSE
+  is returned and SigSize is set to the required buffer size to obtain the signature.
+
+  If RsaContext is NULL, then return FALSE.
+  If Message is NULL, then return FALSE.
+  If MsgSize is zero or > INT_MAX, then return FALSE.
+  If DigestLen is NOT 32, 48 or 64, return FALSE.
+  If SaltLen is not equal to DigestLen, then return FALSE.
+  If SigSize is large enough but Signature is NULL, then return FALSE.
+  If this interface is not supported, then return FALSE.
+
+  @param[in]      RsaContext   Pointer to RSA context for signature generation.
+  @param[in]      Message      Pointer to octet message to be signed.
+  @param[in]      MsgSize      Size of the message in bytes.
+  @param[in]      DigestLen    Length of the digest in bytes to be used for RSA signature operation.
+  @param[in]      SaltLen      Length of the salt in bytes to be used for PSS encoding.
+  @param[out]     Signature    Pointer to buffer to receive RSA PSS signature.
+  @param[in, out] SigSize      On input, the size of Signature buffer in bytes.
+                               On output, the size of data returned in Signature buffer in bytes.
+
+  @retval  TRUE   Signature successfully generated in RSASSA-PSS.
+  @retval  FALSE  Signature generation failed.
+  @retval  FALSE  SigSize is too small.
+  @retval  FALSE  This interface is not supported.
+
+**/
+BOOLEAN
+EFIAPI
+RsaPssSign (
+  IN      VOID         *RsaContext,
+  IN      CONST UINT8  *Message,
+  IN      UINTN        MsgSize,
+  IN      UINT16       DigestLen,
+  IN      UINT16       SaltLen,
+  OUT     UINT8        *Signature,
+  IN OUT  UINTN        *SigSize
+  )
+{
+  CALL_CRYPTO_SERVICE (RsaPssSign, (RsaContext, Message, MsgSize, DigestLen, SaltLen, Signature, SigSize), FALSE);
+}
+
+/**
   Retrieve the RSA Private Key from the password-protected PEM key data.
 
   If PemData is NULL, then return FALSE.
@@ -2567,7 +1788,7 @@ EFIAPI
 X509GetCommonName (
   IN      CONST UINT8  *Cert,
   IN      UINTN        CertSize,
-  OUT     CHAR8        *CommonName,  OPTIONAL
+  OUT     CHAR8        *CommonName   OPTIONAL,
   IN OUT  UINTN        *CommonNameSize
   )
 {
@@ -2603,10 +1824,10 @@ X509GetCommonName (
 RETURN_STATUS
 EFIAPI
 X509GetOrganizationName (
-  IN      CONST UINT8   *Cert,
-  IN      UINTN         CertSize,
-  OUT     CHAR8         *NameBuffer,  OPTIONAL
-  IN OUT  UINTN         *NameBufferSize
+  IN      CONST UINT8  *Cert,
+  IN      UINTN        CertSize,
+  OUT     CHAR8        *NameBuffer   OPTIONAL,
+  IN OUT  UINTN        *NameBufferSize
   )
 {
   CALL_CRYPTO_SERVICE (X509GetOrganizationName, (Cert, CertSize, NameBuffer, NameBufferSize), RETURN_UNSUPPORTED);
@@ -2875,8 +2096,8 @@ Pkcs1v2Encrypt (
   IN   UINTN        PublicKeySize,
   IN   UINT8        *InData,
   IN   UINTN        InDataSize,
-  IN   CONST UINT8  *PrngSeed,  OPTIONAL
-  IN   UINTN        PrngSeedSize,  OPTIONAL
+  IN   CONST UINT8  *PrngSeed   OPTIONAL,
+  IN   UINTN        PrngSeedSize   OPTIONAL,
   OUT  UINT8        **EncryptedData,
   OUT  UINTN        *EncryptedDataSize
   )
@@ -2935,7 +2156,7 @@ Pkcs7GetSigners (
 VOID
 EFIAPI
 Pkcs7FreeSigners (
-  IN  UINT8        *Certs
+  IN  UINT8  *Certs
   )
 {
   CALL_VOID_CRYPTO_SERVICE (Pkcs7FreeSigners, (Certs));
@@ -3102,7 +2323,6 @@ VerifyEKUsInPkcs7Signature (
   CALL_CRYPTO_SERVICE (VerifyEKUsInPkcs7Signature, (Pkcs7Signature, SignatureSize, RequiredEKUs, RequiredEKUsSize, RequireAllPresent), FALSE);
 }
 
-
 /**
   Extracts the attached content from a PKCS#7 signed data if existed. The input signed
   data could be wrapped in a ContentInfo structure.
@@ -3206,9 +2426,9 @@ ImageTimestampVerify (
   CALL_CRYPTO_SERVICE (ImageTimestampVerify, (AuthData, DataSize, TsaCert, CertSize, SigningTime), FALSE);
 }
 
-//=====================================================================================
+// =====================================================================================
 //    DH Key Exchange Primitive
-//=====================================================================================
+// =====================================================================================
 
 /**
   Allocates and Initializes one Diffie-Hellman Context for subsequent use.
@@ -3389,9 +2609,9 @@ DhComputeKey (
   CALL_CRYPTO_SERVICE (DhComputeKey, (DhContext, PeerPublicKey, PeerPublicKeySize, Key, KeySize), FALSE);
 }
 
-//=====================================================================================
+// =====================================================================================
 //    Pseudo-Random Generation Primitive
-//=====================================================================================
+// =====================================================================================
 
 /**
   Sets up the seed value for the pseudorandom number generator.
@@ -3445,9 +2665,9 @@ RandomBytes (
   CALL_CRYPTO_SERVICE (RandomBytes, (Output, Size), FALSE);
 }
 
-//=====================================================================================
+// =====================================================================================
 //    Key Derivation Function Primitive
-//=====================================================================================
+// =====================================================================================
 
 /**
   Derive key data using HMAC-SHA256 based KDF.
@@ -3510,7 +2730,7 @@ TlsInitialize (
 VOID
 EFIAPI
 TlsCtxFree (
-  IN   VOID                  *TlsCtx
+  IN   VOID  *TlsCtx
   )
 {
   CALL_VOID_CRYPTO_SERVICE (TlsCtxFree, (TlsCtx));
@@ -3530,8 +2750,8 @@ TlsCtxFree (
 VOID *
 EFIAPI
 TlsCtxNew (
-  IN     UINT8                    MajorVer,
-  IN     UINT8                    MinorVer
+  IN     UINT8  MajorVer,
+  IN     UINT8  MinorVer
   )
 {
   CALL_CRYPTO_SERVICE (TlsCtxNew, (MajorVer, MinorVer), NULL);
@@ -3549,7 +2769,7 @@ TlsCtxNew (
 VOID
 EFIAPI
 TlsFree (
-  IN     VOID                     *Tls
+  IN     VOID  *Tls
   )
 {
   CALL_VOID_CRYPTO_SERVICE (TlsFree, (Tls));
@@ -3571,7 +2791,7 @@ TlsFree (
 VOID *
 EFIAPI
 TlsNew (
-  IN     VOID                     *TlsCtx
+  IN     VOID  *TlsCtx
   )
 {
   CALL_CRYPTO_SERVICE (TlsNew, (TlsCtx), NULL);
@@ -3591,7 +2811,7 @@ TlsNew (
 BOOLEAN
 EFIAPI
 TlsInHandshake (
-  IN     VOID                     *Tls
+  IN     VOID  *Tls
   )
 {
   CALL_CRYPTO_SERVICE (TlsInHandshake, (Tls), FALSE);
@@ -3626,11 +2846,11 @@ TlsInHandshake (
 EFI_STATUS
 EFIAPI
 TlsDoHandshake (
-  IN     VOID                     *Tls,
-  IN     UINT8                    *BufferIn, OPTIONAL
-  IN     UINTN                    BufferInSize, OPTIONAL
-     OUT UINT8                    *BufferOut, OPTIONAL
-  IN OUT UINTN                    *BufferOutSize
+  IN     VOID   *Tls,
+  IN     UINT8  *BufferIn  OPTIONAL,
+  IN     UINTN  BufferInSize  OPTIONAL,
+  OUT UINT8     *BufferOut  OPTIONAL,
+  IN OUT UINTN  *BufferOutSize
   )
 {
   CALL_CRYPTO_SERVICE (TlsDoHandshake, (Tls, BufferIn, BufferInSize, BufferOut, BufferOutSize), EFI_UNSUPPORTED);
@@ -3664,11 +2884,11 @@ TlsDoHandshake (
 EFI_STATUS
 EFIAPI
 TlsHandleAlert (
-  IN     VOID                     *Tls,
-  IN     UINT8                    *BufferIn, OPTIONAL
-  IN     UINTN                    BufferInSize, OPTIONAL
-     OUT UINT8                    *BufferOut, OPTIONAL
-  IN OUT UINTN                    *BufferOutSize
+  IN     VOID   *Tls,
+  IN     UINT8  *BufferIn  OPTIONAL,
+  IN     UINTN  BufferInSize  OPTIONAL,
+  OUT UINT8     *BufferOut  OPTIONAL,
+  IN OUT UINTN  *BufferOutSize
   )
 {
   CALL_CRYPTO_SERVICE (TlsHandleAlert, (Tls, BufferIn, BufferInSize, BufferOut, BufferOutSize), EFI_UNSUPPORTED);
@@ -3695,9 +2915,9 @@ TlsHandleAlert (
 EFI_STATUS
 EFIAPI
 TlsCloseNotify (
-  IN     VOID                     *Tls,
-  IN OUT UINT8                    *Buffer,
-  IN OUT UINTN                    *BufferSize
+  IN     VOID   *Tls,
+  IN OUT UINT8  *Buffer,
+  IN OUT UINTN  *BufferSize
   )
 {
   CALL_CRYPTO_SERVICE (TlsCloseNotify, (Tls, Buffer, BufferSize), EFI_UNSUPPORTED);
@@ -3720,9 +2940,9 @@ TlsCloseNotify (
 INTN
 EFIAPI
 TlsCtrlTrafficOut (
-  IN     VOID                     *Tls,
-  IN OUT VOID                     *Buffer,
-  IN     UINTN                    BufferSize
+  IN     VOID   *Tls,
+  IN OUT VOID   *Buffer,
+  IN     UINTN  BufferSize
   )
 {
   CALL_CRYPTO_SERVICE (TlsCtrlTrafficOut, (Tls, Buffer, BufferSize), 0);
@@ -3745,9 +2965,9 @@ TlsCtrlTrafficOut (
 INTN
 EFIAPI
 TlsCtrlTrafficIn (
-  IN     VOID                     *Tls,
-  IN     VOID                     *Buffer,
-  IN     UINTN                    BufferSize
+  IN     VOID   *Tls,
+  IN     VOID   *Buffer,
+  IN     UINTN  BufferSize
   )
 {
   CALL_CRYPTO_SERVICE (TlsCtrlTrafficIn, (Tls, Buffer, BufferSize), 0);
@@ -3771,9 +2991,9 @@ TlsCtrlTrafficIn (
 INTN
 EFIAPI
 TlsRead (
-  IN     VOID                     *Tls,
-  IN OUT VOID                     *Buffer,
-  IN     UINTN                    BufferSize
+  IN     VOID   *Tls,
+  IN OUT VOID   *Buffer,
+  IN     UINTN  BufferSize
   )
 {
   CALL_CRYPTO_SERVICE (TlsRead, (Tls, Buffer, BufferSize), 0);
@@ -3797,9 +3017,9 @@ TlsRead (
 INTN
 EFIAPI
 TlsWrite (
-  IN     VOID                     *Tls,
-  IN     VOID                     *Buffer,
-  IN     UINTN                    BufferSize
+  IN     VOID   *Tls,
+  IN     VOID   *Buffer,
+  IN     UINTN  BufferSize
   )
 {
   CALL_CRYPTO_SERVICE (TlsWrite, (Tls, Buffer, BufferSize), 0);
@@ -3822,9 +3042,9 @@ TlsWrite (
 EFI_STATUS
 EFIAPI
 TlsSetVersion (
-  IN     VOID                     *Tls,
-  IN     UINT8                    MajorVer,
-  IN     UINT8                    MinorVer
+  IN     VOID   *Tls,
+  IN     UINT8  MajorVer,
+  IN     UINT8  MinorVer
   )
 {
   CALL_CRYPTO_SERVICE (TlsSetVersion, (Tls, MajorVer, MinorVer), EFI_UNSUPPORTED);
@@ -3846,8 +3066,8 @@ TlsSetVersion (
 EFI_STATUS
 EFIAPI
 TlsSetConnectionEnd (
-  IN     VOID                     *Tls,
-  IN     BOOLEAN                  IsServer
+  IN     VOID     *Tls,
+  IN     BOOLEAN  IsServer
   )
 {
   CALL_CRYPTO_SERVICE (TlsSetConnectionEnd, (Tls, IsServer), EFI_UNSUPPORTED);
@@ -3874,9 +3094,9 @@ TlsSetConnectionEnd (
 EFI_STATUS
 EFIAPI
 TlsSetCipherList (
-  IN     VOID                     *Tls,
-  IN     UINT16                   *CipherId,
-  IN     UINTN                    CipherNum
+  IN     VOID    *Tls,
+  IN     UINT16  *CipherId,
+  IN     UINTN   CipherNum
   )
 {
   CALL_CRYPTO_SERVICE (TlsSetCipherList, (Tls, CipherId, CipherNum), EFI_UNSUPPORTED);
@@ -3897,7 +3117,7 @@ TlsSetCipherList (
 EFI_STATUS
 EFIAPI
 TlsSetCompressionMethod (
-  IN     UINT8                    CompMethod
+  IN     UINT8  CompMethod
   )
 {
   CALL_CRYPTO_SERVICE (TlsSetCompressionMethod, (CompMethod), EFI_UNSUPPORTED);
@@ -3915,8 +3135,8 @@ TlsSetCompressionMethod (
 VOID
 EFIAPI
 TlsSetVerify (
-  IN     VOID                     *Tls,
-  IN     UINT32                   VerifyMode
+  IN     VOID    *Tls,
+  IN     UINT32  VerifyMode
   )
 {
   CALL_VOID_CRYPTO_SERVICE (TlsSetVerify, (Tls, VerifyMode));
@@ -3937,9 +3157,9 @@ TlsSetVerify (
 EFI_STATUS
 EFIAPI
 TlsSetVerifyHost (
-  IN     VOID                     *Tls,
-  IN     UINT32                   Flags,
-  IN     CHAR8                    *HostName
+  IN     VOID    *Tls,
+  IN     UINT32  Flags,
+  IN     CHAR8   *HostName
   )
 {
   CALL_CRYPTO_SERVICE (TlsSetVerifyHost, (Tls, Flags, HostName), EFI_UNSUPPORTED);
@@ -3963,9 +3183,9 @@ TlsSetVerifyHost (
 EFI_STATUS
 EFIAPI
 TlsSetSessionId (
-  IN     VOID                     *Tls,
-  IN     UINT8                    *SessionId,
-  IN     UINT16                   SessionIdLen
+  IN     VOID    *Tls,
+  IN     UINT8   *SessionId,
+  IN     UINT16  SessionIdLen
   )
 {
   CALL_CRYPTO_SERVICE (TlsSetSessionId, (Tls, SessionId, SessionIdLen), EFI_UNSUPPORTED);
@@ -3991,9 +3211,9 @@ TlsSetSessionId (
 EFI_STATUS
 EFIAPI
 TlsSetCaCertificate (
-  IN     VOID                     *Tls,
-  IN     VOID                     *Data,
-  IN     UINTN                    DataSize
+  IN     VOID   *Tls,
+  IN     VOID   *Data,
+  IN     UINTN  DataSize
   )
 {
   CALL_CRYPTO_SERVICE (TlsSetCaCertificate, (Tls, Data, DataSize), EFI_UNSUPPORTED);
@@ -4019,9 +3239,9 @@ TlsSetCaCertificate (
 EFI_STATUS
 EFIAPI
 TlsSetHostPublicCert (
-  IN     VOID                     *Tls,
-  IN     VOID                     *Data,
-  IN     UINTN                    DataSize
+  IN     VOID   *Tls,
+  IN     VOID   *Data,
+  IN     UINTN  DataSize
   )
 {
   CALL_CRYPTO_SERVICE (TlsSetHostPublicCert, (Tls, Data, DataSize), EFI_UNSUPPORTED);
@@ -4046,9 +3266,9 @@ TlsSetHostPublicCert (
 EFI_STATUS
 EFIAPI
 TlsSetHostPrivateKey (
-  IN     VOID                     *Tls,
-  IN     VOID                     *Data,
-  IN     UINTN                    DataSize
+  IN     VOID   *Tls,
+  IN     VOID   *Data,
+  IN     UINTN  DataSize
   )
 {
   CALL_CRYPTO_SERVICE (TlsSetHostPrivateKey, (Tls, Data, DataSize), EFI_UNSUPPORTED);
@@ -4071,8 +3291,8 @@ TlsSetHostPrivateKey (
 EFI_STATUS
 EFIAPI
 TlsSetCertRevocationList (
-  IN     VOID                     *Data,
-  IN     UINTN                    DataSize
+  IN     VOID   *Data,
+  IN     UINTN  DataSize
   )
 {
   CALL_CRYPTO_SERVICE (TlsSetCertRevocationList, (Data, DataSize), EFI_UNSUPPORTED);
@@ -4094,7 +3314,7 @@ TlsSetCertRevocationList (
 UINT16
 EFIAPI
 TlsGetVersion (
-  IN     VOID                     *Tls
+  IN     VOID  *Tls
   )
 {
   CALL_CRYPTO_SERVICE (TlsGetVersion, (Tls), 0);
@@ -4116,7 +3336,7 @@ TlsGetVersion (
 UINT8
 EFIAPI
 TlsGetConnectionEnd (
-  IN     VOID                     *Tls
+  IN     VOID  *Tls
   )
 {
   CALL_CRYPTO_SERVICE (TlsGetConnectionEnd, (Tls), 0);
@@ -4139,8 +3359,8 @@ TlsGetConnectionEnd (
 EFI_STATUS
 EFIAPI
 TlsGetCurrentCipher (
-  IN     VOID                     *Tls,
-  IN OUT UINT16                   *CipherId
+  IN     VOID    *Tls,
+  IN OUT UINT16  *CipherId
   )
 {
   CALL_CRYPTO_SERVICE (TlsGetCurrentCipher, (Tls, CipherId), EFI_UNSUPPORTED);
@@ -4165,8 +3385,8 @@ TlsGetCurrentCipher (
 EFI_STATUS
 EFIAPI
 TlsGetCurrentCompressionId (
-  IN     VOID                     *Tls,
-  IN OUT UINT8                    *CompressionId
+  IN     VOID   *Tls,
+  IN OUT UINT8  *CompressionId
   )
 {
   CALL_CRYPTO_SERVICE (TlsGetCurrentCompressionId, (Tls, CompressionId), EFI_UNSUPPORTED);
@@ -4188,7 +3408,7 @@ TlsGetCurrentCompressionId (
 UINT32
 EFIAPI
 TlsGetVerify (
-  IN     VOID                     *Tls
+  IN     VOID  *Tls
   )
 {
   CALL_CRYPTO_SERVICE (TlsGetVerify, (Tls), 0);
@@ -4212,9 +3432,9 @@ TlsGetVerify (
 EFI_STATUS
 EFIAPI
 TlsGetSessionId (
-  IN     VOID                     *Tls,
-  IN OUT UINT8                    *SessionId,
-  IN OUT UINT16                   *SessionIdLen
+  IN     VOID    *Tls,
+  IN OUT UINT8   *SessionId,
+  IN OUT UINT16  *SessionIdLen
   )
 {
   CALL_CRYPTO_SERVICE (TlsGetSessionId, (Tls, SessionId, SessionIdLen), EFI_UNSUPPORTED);
@@ -4234,8 +3454,8 @@ TlsGetSessionId (
 VOID
 EFIAPI
 TlsGetClientRandom (
-  IN     VOID                     *Tls,
-  IN OUT UINT8                    *ClientRandom
+  IN     VOID   *Tls,
+  IN OUT UINT8  *ClientRandom
   )
 {
   CALL_VOID_CRYPTO_SERVICE (TlsGetClientRandom, (Tls, ClientRandom));
@@ -4255,8 +3475,8 @@ TlsGetClientRandom (
 VOID
 EFIAPI
 TlsGetServerRandom (
-  IN     VOID                     *Tls,
-  IN OUT UINT8                    *ServerRandom
+  IN     VOID   *Tls,
+  IN OUT UINT8  *ServerRandom
   )
 {
   CALL_VOID_CRYPTO_SERVICE (TlsGetServerRandom, (Tls, ServerRandom));
@@ -4279,8 +3499,8 @@ TlsGetServerRandom (
 EFI_STATUS
 EFIAPI
 TlsGetKeyMaterial (
-  IN     VOID                     *Tls,
-  IN OUT UINT8                    *KeyMaterial
+  IN     VOID   *Tls,
+  IN OUT UINT8  *KeyMaterial
   )
 {
   CALL_CRYPTO_SERVICE (TlsGetKeyMaterial, (Tls, KeyMaterial), EFI_UNSUPPORTED);
@@ -4305,9 +3525,9 @@ TlsGetKeyMaterial (
 EFI_STATUS
 EFIAPI
 TlsGetCaCertificate (
-  IN     VOID                     *Tls,
-  OUT    VOID                     *Data,
-  IN OUT UINTN                    *DataSize
+  IN     VOID   *Tls,
+  OUT    VOID   *Data,
+  IN OUT UINTN  *DataSize
   )
 {
   CALL_CRYPTO_SERVICE (TlsGetCaCertificate, (Tls, Data, DataSize), EFI_UNSUPPORTED);
@@ -4333,9 +3553,9 @@ TlsGetCaCertificate (
 EFI_STATUS
 EFIAPI
 TlsGetHostPublicCert (
-  IN     VOID                     *Tls,
-  OUT    VOID                     *Data,
-  IN OUT UINTN                    *DataSize
+  IN     VOID   *Tls,
+  OUT    VOID   *Data,
+  IN OUT UINTN  *DataSize
   )
 {
   CALL_CRYPTO_SERVICE (TlsGetHostPublicCert, (Tls, Data, DataSize), EFI_UNSUPPORTED);
@@ -4360,9 +3580,9 @@ TlsGetHostPublicCert (
 EFI_STATUS
 EFIAPI
 TlsGetHostPrivateKey (
-  IN     VOID                     *Tls,
-  OUT    VOID                     *Data,
-  IN OUT UINTN                    *DataSize
+  IN     VOID   *Tls,
+  OUT    VOID   *Data,
+  IN OUT UINTN  *DataSize
   )
 {
   CALL_CRYPTO_SERVICE (TlsGetHostPrivateKey, (Tls, Data, DataSize), EFI_UNSUPPORTED);
@@ -4386,8 +3606,8 @@ TlsGetHostPrivateKey (
 EFI_STATUS
 EFIAPI
 TlsGetCertRevocationList (
-  OUT    VOID                     *Data,
-  IN OUT UINTN                    *DataSize
+  OUT    VOID   *Data,
+  IN OUT UINTN  *DataSize
   )
 {
   CALL_CRYPTO_SERVICE (TlsGetCertRevocationList, (Data, DataSize), EFI_UNSUPPORTED);

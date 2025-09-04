@@ -1,14 +1,7 @@
 /** @file
 
   Copyright (c) 2019, Linaro, Ltd. All rights reserved.<BR>
-
-  This program and the accompanying materials are licensed and made available
-  under the terms and conditions of the BSD License which accompanies this
-  distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+  SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
@@ -114,15 +107,15 @@ STATIC
 EFI_STATUS
 EFIAPI
 NonCoherentIoMmuMap (
-  IN     EDKII_IOMMU_PROTOCOL                       *This,
-  IN     EDKII_IOMMU_OPERATION                      Operation,
-  IN     VOID                                       *HostAddress,
-  IN OUT UINTN                                      *NumberOfBytes,
-  OUT    EFI_PHYSICAL_ADDRESS                       *DeviceAddress,
-  OUT    VOID                                       **Mapping
+  IN     EDKII_IOMMU_PROTOCOL   *This,
+  IN     EDKII_IOMMU_OPERATION  Operation,
+  IN     VOID                   *HostAddress,
+  IN OUT UINTN                  *NumberOfBytes,
+  OUT    EFI_PHYSICAL_ADDRESS   *DeviceAddress,
+  OUT    VOID                   **Mapping
   )
 {
-  DMA_MAP_OPERATION     DmaOperation;
+  DMA_MAP_OPERATION  DmaOperation;
 
   switch (Operation) {
     case EdkiiIoMmuOperationBusMasterRead:
@@ -145,8 +138,13 @@ NonCoherentIoMmuMap (
       return EFI_INVALID_PARAMETER;
   }
 
-  return DmaMap (DmaOperation, HostAddress, NumberOfBytes,
-           DeviceAddress, Mapping);
+  return DmaMap (
+           DmaOperation,
+           HostAddress,
+           NumberOfBytes,
+           DeviceAddress,
+           Mapping
+           );
 }
 
 /**
@@ -165,8 +163,8 @@ STATIC
 EFI_STATUS
 EFIAPI
 NonCoherentIoMmuUnmap (
-  IN  EDKII_IOMMU_PROTOCOL                     *This,
-  IN  VOID                                     *Mapping
+  IN  EDKII_IOMMU_PROTOCOL  *This,
+  IN  VOID                  *Mapping
   )
 {
   return DmaUnmap (Mapping);
@@ -198,12 +196,12 @@ STATIC
 EFI_STATUS
 EFIAPI
 NonCoherentIoMmuAllocateBuffer (
-  IN     EDKII_IOMMU_PROTOCOL                     *This,
-  IN     EFI_ALLOCATE_TYPE                        Type,
-  IN     EFI_MEMORY_TYPE                          MemoryType,
-  IN     UINTN                                    Pages,
-  IN OUT VOID                                     **HostAddress,
-  IN     UINT64                                   Attributes
+  IN     EDKII_IOMMU_PROTOCOL  *This,
+  IN     EFI_ALLOCATE_TYPE     Type,
+  IN     EFI_MEMORY_TYPE       MemoryType,
+  IN     UINTN                 Pages,
+  IN OUT VOID                  **HostAddress,
+  IN     UINT64                Attributes
   )
 {
   return DmaAllocateBuffer (MemoryType, Pages, HostAddress);
@@ -226,9 +224,9 @@ STATIC
 EFI_STATUS
 EFIAPI
 NonCoherentIoMmuFreeBuffer (
-  IN  EDKII_IOMMU_PROTOCOL                     *This,
-  IN  UINTN                                    Pages,
-  IN  VOID                                     *HostAddress
+  IN  EDKII_IOMMU_PROTOCOL  *This,
+  IN  UINTN                 Pages,
+  IN  VOID                  *HostAddress
   )
 {
   return DmaFreeBuffer (Pages, HostAddress);
@@ -243,15 +241,17 @@ STATIC EDKII_IOMMU_PROTOCOL  mNonCoherentIoMmuOps = {
   NonCoherentIoMmuFreeBuffer,
 };
 
-
 EFI_STATUS
 EFIAPI
 NonCoherentIoMmuDxeEntryPoint (
-  IN EFI_HANDLE         ImageHandle,
-  IN EFI_SYSTEM_TABLE   *SystemTable
+  IN EFI_HANDLE        ImageHandle,
+  IN EFI_SYSTEM_TABLE  *SystemTable
   )
 {
-  return gBS->InstallMultipleProtocolInterfaces (&ImageHandle,
-                &gEdkiiIoMmuProtocolGuid, &mNonCoherentIoMmuOps,
-                NULL);
+  return gBS->InstallMultipleProtocolInterfaces (
+                &ImageHandle,
+                &gEdkiiIoMmuProtocolGuid,
+                &mNonCoherentIoMmuOps,
+                NULL
+                );
 }

@@ -7,7 +7,6 @@
 **/
 
 #include <Library/IoLib.h>
-#include <Library/NorFlashPlatformLib.h>
 #include <Library/BaseMemoryLib.h>
 #include <Library/MemoryAllocationLib.h>
 
@@ -165,7 +164,7 @@ BootMonFsDiscoverNextImage (
 
     // If we found a valid image description...
     if (BootMonFsIsImageValid (&File->HwDescription, (CurrentLba - Instance->Media->LowestAlignedLba))) {
-      DEBUG ((EFI_D_ERROR, "Found image: %a in block %d.\n",
+      DEBUG ((DEBUG_ERROR, "Found image: %a in block %d.\n",
         &(File->HwDescription.Footer.Filename),
         (UINTN)(CurrentLba - Instance->Media->LowestAlignedLba)
         ));

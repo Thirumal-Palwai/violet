@@ -18,7 +18,7 @@ EXPRESSIONS = {
     'exclude':    re.compile(r'^X:\s*(?P<exclude>.*?)\r*$'),
     'file':       re.compile(r'^F:\s*(?P<file>.*?)\r*$'),
     'list':       re.compile(r'^L:\s*(?P<list>.*?)\r*$'),
-    'maintainer': re.compile(r'^M:\s*(?P<maintainer>.*<.*?>)\r*$'),
+    'maintainer': re.compile(r'^M:\s*(?P<maintainer>.*?)\r*$'),
     'reviewer':   re.compile(r'^R:\s*(?P<reviewer>.*?)\r*$'),
     'status':     re.compile(r'^S:\s*(?P<status>.*?)\r*$'),
     'tree':       re.compile(r'^T:\s*(?P<tree>.*?)\r*$'),
@@ -77,8 +77,12 @@ def get_section_maintainers(path, section):
        matching the provided path in the provided section."""
     maintainers = []
     lists = []
+    nowarn_status = ['Supported', 'Maintained']
 
     if path_in_section(path, section):
+        for status in section['status']:
+            if status not in nowarn_status:
+                print('WARNING: Maintained status for "%s" is \'%s\'!' % (path, status))
         for address in section['maintainer'], section['reviewer']:
             # Convert to list if necessary
             if isinstance(address, list):
@@ -174,7 +178,7 @@ if __name__ == '__main__':
     SECTIONS = parse_maintainers_file(CONFIG_FILE)
 
     if ARGS.lookup:
-        FILES = [ARGS.lookup]
+        FILES = [ARGS.lookup.replace('\\','/')]
     else:
         FILES = get_modified_files(REPO, ARGS)
 
@@ -187,4 +191,6 @@ if __name__ == '__main__':
             ADDRESSES += addresslist
 
     for address in list(OrderedDict.fromkeys(ADDRESSES)):
+        if '<' in address and '>' in address:
+            address = address.split('>', 1)[0] + '>'
         print('  %s' % address)

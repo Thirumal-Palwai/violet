@@ -24,7 +24,6 @@
 #include <Library/TimerLib.h>
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/UefiRuntimeLib.h>
-#include <Protocol/RealTimeClock.h>
 #include "RealTimeClockLib.h"
 
 STATIC EFI_EVENT              mRtcVirtualAddrChangeEvent;
@@ -79,9 +78,6 @@ LibGetTime (
   // Convert from internal 32-bit time to UEFI time
   EpochToEfiTime (RegVal, Time);
 
-  Time->TimeZone = EFI_UNSPECIFIED_TIMEZONE;
-  Time->Daylight = 0;
-
   return Status;
 }
 
@@ -102,7 +98,7 @@ LibSetTime (
   )
 {
   EFI_STATUS  Status = EFI_SUCCESS;
-  UINT32      EpochSeconds;
+  UINTN       EpochSeconds;
 
   // Check the input parameters are within the range specified by UEFI
   if (!IsTimeValid (Time)) {
@@ -111,9 +107,12 @@ LibSetTime (
 
   // Convert time to raw seconds
   EpochSeconds = EfiTimeToEpoch (Time);
+  if (EpochSeconds > MAX_UINT32) {
+    return EFI_INVALID_PARAMETER;
+  }
 
   // Issue delayed write to time register
-  RtcDelayedWrite (RTC_TIME_REG, EpochSeconds);
+  RtcDelayedWrite (RTC_TIME_REG, (UINT32)EpochSeconds);
 
   return Status;
 }
@@ -140,11 +139,15 @@ LibGetWakeupTime (
 {
   UINT32 WakeupSeconds;
 
+  if (Time == NULL || Enabled == NULL || Pending == NULL) {
+    return EFI_INVALID_PARAMETER;
+  }
+
   *Enabled = MmioRead32 (mArmadaRtcBase + RTC_IRQ_2_CONFIG_REG) & RTC_IRQ_ALARM_EN;
 
   *Pending = MmioRead32 (mArmadaRtcBase + RTC_IRQ_STATUS_REG) & RTC_IRQ_ALARM_MASK;
   // Ack pending alarm
-  if (Pending) {
+  if (*Pending) {
     MmioWrite32 (mArmadaRtcBase + RTC_IRQ_STATUS_REG, RTC_IRQ_ALARM_MASK);
   }
 
@@ -174,21 +177,56 @@ LibSetWakeupTime (
   OUT EFI_TIME    *Time
   )
 {
-  UINT32      WakeupSeconds;
+  UINTN       WakeupSeconds;
+
+  // Handle timer disabling case
+  if (!Enabled) {
+    RtcDelayedWrite (RTC_IRQ_2_CONFIG_REG, 0);
+    return EFI_SUCCESS;
+  }
+
+  if (Time == NULL || !IsTimeValid (Time)) {
+    return EFI_INVALID_PARAMETER;
+  }
 
   // Convert time to raw seconds
   WakeupSeconds = EfiTimeToEpoch (Time);
-
-  // Issue delayed write to alarm register
-  RtcDelayedWrite (RTC_ALARM_2_REG, WakeupSeconds);
-
-  if (Enabled) {
-    MmioWrite32 (mArmadaRtcBase + RTC_IRQ_2_CONFIG_REG, RTC_IRQ_ALARM_EN);
-  } else {
-    MmioWrite32 (mArmadaRtcBase + RTC_IRQ_2_CONFIG_REG, 0);
+  if (WakeupSeconds > MAX_UINT32) {
+    return EFI_INVALID_PARAMETER;
   }
 
+  // Issue delayed write to alarm register
+  RtcDelayedWrite (RTC_ALARM_2_REG, (UINT32)WakeupSeconds);
+
+  // Enable wakeup timer
+  RtcDelayedWrite (RTC_IRQ_2_CONFIG_REG, RTC_IRQ_ALARM_EN);
+
   return EFI_SUCCESS;
+}
+
+/**
+  Fixup internal data so that EFI can be call in virtual mode.
+  Call the passed in Child Notify event and convert any pointers in
+  lib to virtual mode.
+
+  @param[in]    Event   The Event that is being processed
+  @param[in]    Context Event Context
+**/
+STATIC
+VOID
+EFIAPI
+VirtualNotifyEvent (
+  IN EFI_EVENT        Event,
+  IN VOID             *Context
+  )
+{
+  //
+  // Only needed if you are going to support the OS calling RTC functions in virtual mode.
+  // You will need to call EfiConvertPointer (). To convert any stored physical addresses
+  // to virtual address. After the OS transistions to calling in virtual mode, all future
+  // runtime calls will be made in virtual mode.
+  //
+  EfiConvertPointer (0x0, (VOID**)&mArmadaRtcBase);
 }
 
 /**
@@ -208,7 +246,6 @@ LibRtcInitialize (
   IN EFI_SYSTEM_TABLE                      *SystemTable
   )
 {
-  EFI_HANDLE    Handle;
   EFI_STATUS    Status;
 
   // Obtain RTC device base address
@@ -254,64 +291,24 @@ LibRtcInitialize (
           RTC_READ_OUTPUT_DELAY_DEFAULT
           );
 
-  // Install the protocol
-  Handle = NULL;
-  Status = gBS->InstallMultipleProtocolInterfaces (
-                  &Handle,
-                  &gEfiRealTimeClockArchProtocolGuid,
-                  NULL,
-                  NULL
-                 );
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "RTC: Failed to install the protocol\n"));
-    goto ErrSetMem;
-  }
-
   // Register for the virtual address change event
   Status = gBS->CreateEventEx (
                   EVT_NOTIFY_SIGNAL,
                   TPL_NOTIFY,
-                  LibRtcVirtualNotifyEvent,
+                  VirtualNotifyEvent,
                   NULL,
                   &gEfiEventVirtualAddressChangeGuid,
                   &mRtcVirtualAddrChangeEvent
                   );
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "RTC: Failed to register virtual address change event\n"));
-    goto ErrEvent;
+    goto ErrSetMem;
   }
 
   return Status;
 
-ErrEvent:
-  gBS->UninstallProtocolInterface (Handle, &gEfiRealTimeClockArchProtocolGuid, NULL);
 ErrSetMem:
   gDS->RemoveMemorySpace (mArmadaRtcBase, SIZE_4KB);
 
   return Status;
-}
-
-
-/**
-  Fixup internal data so that EFI can be call in virtual mode.
-  Call the passed in Child Notify event and convert any pointers in
-  lib to virtual mode.
-
-  @param[in]    Event   The Event that is being processed
-  @param[in]    Context Event Context
-**/
-VOID
-EFIAPI
-LibRtcVirtualNotifyEvent (
-  IN EFI_EVENT        Event,
-  IN VOID             *Context
-  )
-{
-  //
-  // Only needed if you are going to support the OS calling RTC functions in virtual mode.
-  // You will need to call EfiConvertPointer (). To convert any stored physical addresses
-  // to virtual address. After the OS transistions to calling in virtual mode, all future
-  // runtime calls will be made in virtual mode.
-  //
-  EfiConvertPointer (0x0, (VOID**)&mArmadaRtcBase);
 }

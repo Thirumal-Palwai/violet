@@ -1,5 +1,5 @@
 ;------------------------------------------------------------------------------ ;
-; Copyright (c) 2012 - 2018, Intel Corporation. All rights reserved.<BR>
+; Copyright (c) 2012 - 2022, Intel Corporation. All rights reserved.<BR>
 ; SPDX-License-Identifier: BSD-2-Clause-Patent
 ;
 ; Module Name:
@@ -18,6 +18,8 @@
 ; CommonExceptionHandler()
 ;
 
+%define VC_EXCEPTION 29
+
 extern ASM_PFX(mErrorCodeFlag)    ; Error code flags for exceptions
 extern ASM_PFX(mDoFarReturnFlag)  ; Do far return flag
 extern ASM_PFX(CommonExceptionHandler)
@@ -30,12 +32,13 @@ SECTION .text
 ALIGN   8
 
 AsmIdtVectorBegin:
+%assign Vector 0
 %rep  32
-    db      0x6a        ; push  #VectorNum
-    db      ($ - AsmIdtVectorBegin) / ((AsmIdtVectorEnd - AsmIdtVectorBegin) / 32) ; VectorNum
+    push    byte %[Vector]
     push    rax
-    mov     rax, strict qword 0 ;    mov     rax, ASM_PFX(CommonInterruptEntry)
+    mov     rax, ASM_PFX(CommonInterruptEntry)
     jmp     rax
+%assign Vector Vector+1
 %endrep
 AsmIdtVectorEnd:
 
@@ -44,8 +47,7 @@ HookAfterStubHeaderBegin:
 @VectorNum:
     db      0          ; 0 will be fixed
     push    rax
-    mov     rax, strict qword 0 ;     mov     rax, HookAfterStubHeaderEnd
-JmpAbsoluteAddress:
+    mov     rax, HookAfterStubHeaderEnd
     jmp     rax
 HookAfterStubHeaderEnd:
     mov     rax, rsp
@@ -225,6 +227,9 @@ HasErrorCode:
     push    rax
 
 ;; UINT64  Dr0, Dr1, Dr2, Dr3, Dr6, Dr7;
+    cmp     qword [rbp + 8], VC_EXCEPTION
+    je      VcDebugRegs          ; For SEV-ES (#VC) Debug registers ignored
+
     mov     rax, dr7
     push    rax
     mov     rax, dr6
@@ -237,11 +242,23 @@ HasErrorCode:
     push    rax
     mov     rax, dr0
     push    rax
+    jmp     DrFinish
 
+VcDebugRegs:
+;; UINT64  Dr0, Dr1, Dr2, Dr3, Dr6, Dr7 are skipped for #VC to avoid exception recursion
+    xor     rax, rax
+    push    rax
+    push    rax
+    push    rax
+    push    rax
+    push    rax
+    push    rax
+
+DrFinish:
 ;; FX_SAVE_STATE_X64 FxSaveState;
     sub rsp, 512
     mov rdi, rsp
-    db 0xf, 0xae, 0x7 ;fxsave [rdi]
+    fxsave [rdi]
 
 ;; UEFI calling convention for x64 requires that Direction flag in EFLAGs is clear
     cld
@@ -257,7 +274,8 @@ HasErrorCode:
     ; and make sure RSP is 16-byte aligned
     ;
     sub     rsp, 4 * 8 + 8
-    call    ASM_PFX(CommonExceptionHandler)
+    mov     rax, ASM_PFX(CommonExceptionHandler)
+    call    rax
     add     rsp, 4 * 8 + 8
 
     cli
@@ -267,7 +285,7 @@ HasErrorCode:
 ;; FX_SAVE_STATE_X64 FxSaveState;
 
     mov rsi, rsp
-    db 0xf, 0xae, 0xE ; fxrstor [rsi]
+    fxrstor [rsi]
     add rsp, 512
 
 ;; UINT64  Dr0, Dr1, Dr2, Dr3, Dr6, Dr7;
@@ -354,8 +372,7 @@ DoReturn:
     push    qword [rax + 0x18]       ; save EFLAGS in new location
     mov     rax, [rax]        ; restore rax
     popfq                     ; restore EFLAGS
-    DB      0x48               ; prefix to composite "retq" with next "retf"
-    retf                      ; far return
+    retfq
 DoIret:
     iretq
 
@@ -365,24 +382,11 @@ DoIret:
 ; comments here for definition of address map
 global ASM_PFX(AsmGetTemplateAddressMap)
 ASM_PFX(AsmGetTemplateAddressMap):
-    lea     rax, [AsmIdtVectorBegin]
+    mov     rax, AsmIdtVectorBegin
     mov     qword [rcx], rax
     mov     qword [rcx + 0x8],  (AsmIdtVectorEnd - AsmIdtVectorBegin) / 32
-    lea     rax, [HookAfterStubHeaderBegin]
+    mov     rax, HookAfterStubHeaderBegin
     mov     qword [rcx + 0x10], rax
-
-; Fix up CommonInterruptEntry address
-    lea    rax, [ASM_PFX(CommonInterruptEntry)]
-    lea    rcx, [AsmIdtVectorBegin]
-%rep  32
-    mov    qword [rcx + (JmpAbsoluteAddress - 8 - HookAfterStubHeaderBegin)], rax
-    add    rcx, (AsmIdtVectorEnd - AsmIdtVectorBegin) / 32
-%endrep
-; Fix up HookAfterStubHeaderEnd
-    lea    rax, [HookAfterStubHeaderEnd]
-    lea    rcx, [JmpAbsoluteAddress]
-    mov    qword [rcx - 8], rax
-
     ret
 
 ;-------------------------------------------------------------------------------------

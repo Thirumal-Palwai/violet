@@ -14,6 +14,7 @@ SYNOPSIS
 [**-P**]
 [**-S** *sname*]
 [**-U** *for_user*]
+[**--u2u** *ccache*]
 *service1 service2* ...
 
 
@@ -63,14 +64,17 @@ OPTIONS
     delegation is not requested, the service name must match the
     credentials cache client principal.
 
+**--u2u** *ccache*
+    Requests a user-to-user ticket.  *ccache* must contain a local
+    krbtgt ticket for the server principal.  The reported version
+    number will typically be 0, as the resulting ticket is not
+    encrypted in the server's long-term key.
 
 ENVIRONMENT
 -----------
 
-kvno uses the following environment variable:
-
-**KRB5CCNAME**
-    Location of the credentials (ticket) cache.
+See :ref:`kerberos(7)` for a description of Kerberos environment
+variables.
 
 
 FILES
@@ -83,4 +87,4 @@ FILES
 SEE ALSO
 --------
 
-:ref:`kinit(1)`, :ref:`kdestroy(1)`
+:ref:`kinit(1)`, :ref:`kdestroy(1)`, :ref:`kerberos(7)`

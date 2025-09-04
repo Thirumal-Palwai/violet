@@ -38,7 +38,7 @@ ConfigurePins (
 
   Status = MvGpioGetProtocol (DriverType, &GpioProtocol);
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a: Unable to find GPIO protocol\n", __FUNCTION__));
+    DEBUG ((DEBUG_ERROR, "%a: Unable to find GPIO protocol\n", __func__));
     return Status;
   }
 
@@ -157,6 +157,27 @@ Cp2XhciInit (
            MV_GPIO_DRIVER_TYPE_SOC_CONTROLLER);
 }
 
+STATIC CONST MV_GPIO_PIN mApSdMmcPins[] = {
+  {
+    MV_GPIO_DRIVER_TYPE_PCA95XX,
+    CN9130_DB_IO_EXPANDER0,
+    CN9130_DB_AP_MMC_VCCQ_PIN,
+    TRUE,
+  },
+};
+
+STATIC
+EFI_STATUS
+EFIAPI
+ApSdMmcInit (
+  IN  NON_DISCOVERABLE_DEVICE  *This
+  )
+{
+  return ConfigurePins (mApSdMmcPins,
+           ARRAY_SIZE (mApSdMmcPins),
+           MV_GPIO_DRIVER_TYPE_PCA95XX);
+}
+
 STATIC CONST MV_GPIO_PIN mCp0SdMmcPins[] = {
   {
     MV_GPIO_DRIVER_TYPE_PCA95XX,
@@ -206,6 +227,8 @@ NonDiscoverableDeviceInitializerGet (
 
   if (Type == NonDiscoverableDeviceTypeSdhci) {
     switch (Index) {
+    case 0:
+      return ApSdMmcInit;
     case 1:
       return Cp0SdMmcInit;
     }

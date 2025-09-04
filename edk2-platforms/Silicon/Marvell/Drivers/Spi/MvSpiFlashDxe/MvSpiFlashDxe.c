@@ -1,5 +1,6 @@
 /*******************************************************************************
 Copyright (C) 2016 Marvell International Ltd.
+Copyright (c) 2020, Arm Limited. All rights reserved.<BR>
 
 SPDX-License-Identifier: BSD-2-Clause-Patent
 
@@ -233,7 +234,7 @@ MvSpiFlashRead (
 
     Offset += ReadLength;
     Length -= ReadLength;
-    Buf += ReadLength;
+    Buf = (VOID*)((UINTN)Buf + ReadLength);
   }
 
   return Status;
@@ -268,8 +269,10 @@ MvSpiFlashWrite (
     SpiFlashFormatAddress (WriteAddr, Slave->AddrSize, Cmd);
 
     // Program proper write address and write data
-    Status = MvSpiFlashWriteCommon (Slave, Cmd, Slave->AddrSize + 1, Buf + ActualIndex,
-      ChunkLength);
+    Status = MvSpiFlashWriteCommon (
+      Slave, Cmd, Slave->AddrSize + 1,
+      (VOID*)((UINTN)Buf + ActualIndex), ChunkLength
+      );
     if (EFI_ERROR (Status)) {
       DEBUG((DEBUG_ERROR, "SpiFlash: Error while programming write address\n"));
       return Status;
@@ -393,7 +396,7 @@ MvSpiFlashUpdateWithProgress (
 
   TmpBuf = (UINT8 *)AllocateZeroPool (SectorSize);
   if (TmpBuf == NULL) {
-    DEBUG ((DEBUG_ERROR, "%a: Cannot allocate memory\n", __FUNCTION__));
+    DEBUG ((DEBUG_ERROR, "%a: Cannot allocate memory\n", __func__));
     return EFI_OUT_OF_RESOURCES;
   }
 
@@ -415,7 +418,7 @@ MvSpiFlashUpdateWithProgress (
                TmpBuf,
                SectorSize);
     if (EFI_ERROR (Status)) {
-      DEBUG ((DEBUG_ERROR, "%a: Error while updating\n", __FUNCTION__));
+      DEBUG ((DEBUG_ERROR, "%a: Error while updating\n", __func__));
       return Status;
     }
   }
@@ -456,7 +459,7 @@ MvSpiFlashReadId (
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR,
       "%a: Unrecognized JEDEC Id bytes: 0x%02x%02x%02x\n",
-      __FUNCTION__,
+      __func__,
       Id[0],
       Id[1],
       Id[2]));
@@ -614,7 +617,7 @@ MvSpiFlashEntryPoint (
                   &gEfiEventVirtualAddressChangeGuid,
                   &mMvSpiFlashVirtualAddrChangeEvent);
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a: Failed to register VA change event\n", __FUNCTION__));
+    DEBUG ((DEBUG_ERROR, "%a: Failed to register VA change event\n", __func__));
     goto ErrorCreateEvent;
   }
 

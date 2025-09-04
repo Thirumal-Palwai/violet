@@ -32,13 +32,14 @@
 
 [Packages]
   MdePkg/MdePkg.dec
+  IntelSiliconPkg/IntelSiliconPkg.dec
   KabylakeSiliconPkg/SiPkg.dec
 
 [Sources]
   PeiSpiLib.c
 
 [Pcd]
-  gSiPkgTokenSpaceGuid.PcdAcpiBaseAddress       ## CONSUMES
+  gIntelSiliconPkgTokenSpaceGuid.PcdAcpiBaseAddress       ## CONSUMES
 
 [Ppis]
-  gPchSpiPpiGuid      ## PRODUCES
+  gPchSpi2PpiGuid      ## PRODUCES

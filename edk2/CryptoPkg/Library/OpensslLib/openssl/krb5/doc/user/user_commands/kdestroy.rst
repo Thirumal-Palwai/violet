@@ -26,7 +26,8 @@ OPTIONS
 
 **-A**
     Destroys all caches in the collection, if a cache collection is
-    available.
+    available.  May be used with the **-c** option to specify the
+    collection to be destroyed.
 
 **-q**
     Run quietly.  Normally kdestroy beeps if it fails to destroy the
@@ -41,6 +42,11 @@ OPTIONS
     **KRB5CCNAME** environment variable is set, its value is used to
     name the default ticket cache.
 
+**-p** *princ_name*
+    If a cache collection is available, destroy the cache for
+    *princ_name* instead of the primary cache.  May be used with the
+    **-c** option to specify the collection to be searched.
+
 
 NOTE
 ----
@@ -53,15 +59,8 @@ when you log out.
 ENVIRONMENT
 -----------
 
-kdestroy uses the following environment variable:
-
-**KRB5CCNAME**
-    Location of the default Kerberos 5 credentials (ticket) cache, in
-    the form *type*:*residual*.  If no *type* prefix is present, the
-    **FILE** type is assumed.  The type of the default cache may
-    determine the availability of a cache collection; for instance, a
-    default cache of type **DIR** causes caches within the directory
-    to be present in the collection.
+See :ref:`kerberos(7)` for a description of Kerberos environment
+variables.
 
 
 FILES
@@ -74,4 +73,4 @@ FILES
 SEE ALSO
 --------
 
-:ref:`kinit(1)`, :ref:`klist(1)`
+:ref:`kinit(1)`, :ref:`klist(1)`, :ref:`kerberos(7)`

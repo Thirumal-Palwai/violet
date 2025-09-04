@@ -51,6 +51,13 @@ library.
    requirement is for parent directory to exist and the current
    process must have permissions to create the directory if it does
    not exist. See :ref:`col_ccache` for details.  New in release 1.10.
+   The following residual forms are supported:
+
+   * DIR:dirname
+   * DIR::dirpath/filename - a single cache within the directory
+
+   Switching to a ccache of the latter type causes it to become the
+   primary for the directory.
 
 #. **FILE** caches are the simplest and most portable. A simple flat
    file format is used to store one credential after another.  This is
@@ -64,7 +71,7 @@ library.
 
    KCM client support is new in release 1.13.  A KCM daemon has not
    yet been implemented in MIT krb5, but the client will interoperate
-   with the KCM daemon implemented by Heimdal.  OS X 10.7 and higher
+   with the KCM daemon implemented by Heimdal.  macOS 10.7 and higher
    provides a KCM daemon as part of the operating system, and the
    **KCM** cache type is used as the default cache on that platform in
    a default build.

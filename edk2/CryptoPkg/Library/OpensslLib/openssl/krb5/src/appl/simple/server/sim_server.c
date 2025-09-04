@@ -33,6 +33,7 @@
  */
 
 #include "krb5.h"
+#include "port-sockets.h"
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -64,14 +65,12 @@ int
 main(int argc, char *argv[])
 {
     int sock, i;
-    unsigned int len;
+    socklen_t len;
     int flags = 0;                      /* for recvfrom() */
     int on = 1;
     struct servent *serv;
-    struct hostent *host;
     struct sockaddr_in s_sock;          /* server's address */
     struct sockaddr_in c_sock;          /* client's address */
-    char full_hname[MAXHOSTNAMELEN];
     char *cp;
     extern char * optarg;
     int ch;
@@ -132,6 +131,7 @@ main(int argc, char *argv[])
     /* Set up server address */
     memset(&s_sock, 0, sizeof(s_sock));
     s_sock.sin_family = AF_INET;
+    s_sock.sin_addr.s_addr = INADDR_ANY;
 
     if (port == 0) {
         /* Look up service */
@@ -143,17 +143,6 @@ main(int argc, char *argv[])
     } else {
         s_sock.sin_port = htons(port);
     }
-
-    if (gethostname(full_hname, sizeof(full_hname)) < 0) {
-        perror("gethostname");
-        exit(1);
-    }
-
-    if ((host = gethostbyname(full_hname)) == (struct hostent *)0) {
-        fprintf(stderr, "%s: host unknown\n", full_hname);
-        exit(1);
-    }
-    memcpy(&s_sock.sin_addr, host->h_addr, sizeof(s_sock.sin_addr));
 
     /* Open socket */
     if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {

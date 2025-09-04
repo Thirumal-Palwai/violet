@@ -6,7 +6,8 @@
 # INF files to generate AutoGen.c and AutoGen.h files
 # for the build infrastructure.
 #
-# Copyright (c) 2019, Intel Corporation. All rights reserved.<BR>
+# Copyright (c) 2019 - 2021, Intel Corporation. All rights reserved.<BR>
+# Copyright (c) 1985 - 2023, American Megatrends International LLC. <BR>
 #
 # SPDX-License-Identifier: BSD-2-Clause-Patent
 #
@@ -30,44 +31,39 @@
 # Library Class section - list of all Library Classes needed by this feature.
 #
 ################################################################################
-[LibraryClasses]
-  #######################################
-  # Edk2 Packages
-  #######################################
-  BaseLib|MdePkg/Library/BaseLib/BaseLib.inf
-  BaseMemoryLib|MdePkg/Library/BaseMemoryLibRepStr/BaseMemoryLibRepStr.inf
-  DebugLib|MdePkg/Library/BaseDebugLibNull/BaseDebugLibNull.inf
-  IpmiLib|MdeModulePkg/Library/BaseIpmiLibNull/BaseIpmiLibNull.inf
-  PrintLib|MdePkg/Library/BasePrintLib/BasePrintLib.inf
-  TimerLib|MdePkg/Library/BaseTimerLibNullTemplate/BaseTimerLibNullTemplate.inf
 
-  #####################################
-  # IPMI Feature Package
-  #####################################
-  IpmiCommandLib|OutOfBandManagement/IpmiFeaturePkg/Library/IpmiCommandLib/IpmiCommandLib.inf
+!include MdePkg/MdeLibs.dsc.inc
+
+[LibraryClasses]
+  IpmiLib|MdeModulePkg/Library/BaseIpmiLibNull/BaseIpmiLibNull.inf
+
+  IpmiCommandLib|ManageabilityPkg/Library/IpmiCommandLib/IpmiCommandLib.inf
+  IpmiPlatformHookLib|IpmiFeaturePkg/Library/IpmiPlatformHookLibNull/IpmiPlatformHookLibNull.inf
 
 [LibraryClasses.common.PEI_CORE,LibraryClasses.common.PEIM]
-  #######################################
-  # Edk2 Packages
-  #######################################
-  HobLib|MdePkg/Library/PeiHobLib/PeiHobLib.inf
-  MemoryAllocationLib|MdePkg/Library/PeiMemoryAllocationLib/PeiMemoryAllocationLib.inf
-  PcdLib|MdePkg/Library/PeiPcdLib/PeiPcdLib.inf
-  PeimEntryPoint|MdePkg/Library/PeimEntryPoint/PeimEntryPoint.inf
-  PeiServicesLib|MdePkg/Library/PeiServicesLib/PeiServicesLib.inf
-  PeiServicesTablePointerLib|MdePkg/Library/PeiServicesTablePointerLibIdt/PeiServicesTablePointerLibIdt.inf
+  IpmiBaseLib|IpmiFeaturePkg/Library/PeiIpmiBaseLib/PeiIpmiBaseLib.inf
+  SsifInterfaceLib|IpmiFeaturePkg/Library/BmcInterfaceCommonAccess/SsifInterfaceLib/PeiSsifInterfaceLib.inf
+  IpmbInterfaceLib|IpmiFeaturePkg/Library/BmcInterfaceCommonAccess/IpmbInterfaceLib/PeiIpmbInterfaceLib.inf
 
 [LibraryClasses.common.DXE_DRIVER,LibraryClasses.common.UEFI_DRIVER]
-  #######################################
-  # Edk2 Packages
-  #######################################
-  DevicePathLib|MdePkg/Library/UefiDevicePathLib/UefiDevicePathLib.inf
-  MemoryAllocationLib|MdePkg/Library/UefiMemoryAllocationLib/UefiMemoryAllocationLib.inf
-  PcdLib|MdePkg/Library/DxePcdLib/DxePcdLib.inf
-  UefiBootServicesTableLib|MdePkg/Library/UefiBootServicesTableLib/UefiBootServicesTableLib.inf
-  UefiDriverEntryPoint|MdePkg/Library/UefiDriverEntryPoint/UefiDriverEntryPoint.inf
-  UefiLib|MdePkg/Library/UefiLib/UefiLib.inf
-  UefiRuntimeServicesTableLib|MdePkg/Library/UefiRuntimeServicesTableLib/UefiRuntimeServicesTableLib.inf
+  IpmiBaseLib|IpmiFeaturePkg/Library/IpmiBaseLib/IpmiBaseLib.inf
+
+[LibraryClasses.common]
+  BmcCommonInterfaceLib|IpmiFeaturePkg/Library/BmcInterfaceCommonAccess/BmcCommonInterfaceLib.inf
+  BtInterfaceLib|IpmiFeaturePkg/Library/BmcInterfaceCommonAccess/BtInterfaceLib/BtInterfaceLib.inf
+  ServerManagementLib|IpmiFeaturePkg/Library/ServerManagementLib/ServerManagementLib.inf
+
+[LibraryClasses.common.DXE_RUNTIME_DRIVER, LibraryClasses.common.DXE_DRIVER]
+  SsifInterfaceLib|IpmiFeaturePkg/Library/BmcInterfaceCommonAccess/SsifInterfaceLib/DxeSsifInterfaceLib.inf
+  IpmbInterfaceLib|IpmiFeaturePkg/Library/BmcInterfaceCommonAccess/IpmbInterfaceLib/DxeIpmbInterfaceLib.inf
+
+[LibraryClasses.common.DXE_SMM_DRIVER,LibraryClasses.common.MM_STANDALONE]
+  IpmiBaseLib|IpmiFeaturePkg/Library/SmmIpmiBaseLib/SmmIpmiBaseLib.inf
+  SsifInterfaceLib|IpmiFeaturePkg/Library/BmcInterfaceCommonAccess/SsifInterfaceLib/SmmSsifInterfaceLib.inf
+  IpmbInterfaceLib|IpmiFeaturePkg/Library/BmcInterfaceCommonAccess/IpmbInterfaceLib/SmmIpmbInterfaceLib.inf
+
+[LibraryClasses.common.MM_STANDALONE]
+  ServerManagementLib|IpmiFeaturePkg/Library/ServerManagementLib/StandaloneMmServerManagementLib.inf
 
 ################################################################################
 #
@@ -86,10 +82,7 @@
 #
 # Feature PEI Components
 #
-
-# @todo: Change below line to [Components.$(PEI_ARCH)] after https://bugzilla.tianocore.org/show_bug.cgi?id=2308
-#        is completed.
-[Components.IA32]
+[Components.$(PEI_ARCH)]
   #####################################
   # IPMI Feature Package
   #####################################
@@ -97,19 +90,20 @@
   # Add library instances here that are not included in package components and should be tested
   # in the package build.
 
-  OutOfBandManagement/IpmiFeaturePkg/Library/IpmiPlatformHookLibNull/IpmiPlatformHookLibNull.inf
+  IpmiFeaturePkg/Library/IpmiPlatformHookLibNull/IpmiPlatformHookLibNull.inf
 
+  #
   # Add components here that should be included in the package build.
-  OutOfBandManagement/IpmiFeaturePkg/Frb/FrbPei.inf
-  OutOfBandManagement/IpmiFeaturePkg/IpmiInit/PeiIpmiInit.inf
+  #
+  IpmiFeaturePkg/GenericIpmi/Pei/PeiGenericIpmi.inf
+  IpmiFeaturePkg/Frb/FrbPei.inf
+  IpmiFeaturePkg/IpmiInit/PeiIpmiInit.inf
+  IpmiFeaturePkg/BmcElog/PeiBmcElog.inf
 
 #
 # Feature DXE Components
 #
-
-# @todo: Change below line to [Components.$(DXE_ARCH)] after https://bugzilla.tianocore.org/show_bug.cgi?id=2308
-#        is completed.
-[Components.X64]
+[Components.$(DXE_ARCH)]
   #####################################
   # IPMI Feature Package
   #####################################
@@ -117,28 +111,26 @@
   # Add library instances here that are not included in package components and should be tested
   # in the package build.
 
-  OutOfBandManagement/IpmiFeaturePkg/Library/IpmiPlatformHookLibNull/IpmiPlatformHookLibNull.inf
+  IpmiFeaturePkg/Library/IpmiPlatformHookLibNull/IpmiPlatformHookLibNull.inf
 
+  #
   # Add components here that should be included in the package build.
-  OutOfBandManagement/IpmiFeaturePkg/BmcAcpi/BmcAcpi.inf
-  OutOfBandManagement/IpmiFeaturePkg/BmcElog/BmcElog.inf
-  OutOfBandManagement/IpmiFeaturePkg/Frb/FrbDxe.inf
-  OutOfBandManagement/IpmiFeaturePkg/IpmiFru/IpmiFru.inf
-  OutOfBandManagement/IpmiFeaturePkg/IpmiInit/DxeIpmiInit.inf
-  OutOfBandManagement/IpmiFeaturePkg/OsWdt/OsWdt.inf
-  OutOfBandManagement/IpmiFeaturePkg/SolStatus/SolStatus.inf
-
-###################################################################################################
-#
-# BuildOptions Section - Define the module specific tool chain flags that should be used as
-#                        the default flags for a module. These flags are appended to any
-#                        standard flags that are defined by the build process. They can be
-#                        applied for any modules or only those modules with the specific
-#                        module style (EDK or EDKII) specified in [Components] section.
-#
-#                        For advanced features, it is recommended to enable [BuildOptions] in
-#                        the applicable INF file so it does not affect the whole board package
-#                        build when this DSC file is active.
-#
-###################################################################################################
-[BuildOptions]
+  #
+  IpmiFeaturePkg/GenericIpmi/Dxe/GenericIpmi.inf
+  IpmiFeaturePkg/Library/SmmIpmiBaseLib/SmmIpmiBaseLib.inf
+  IpmiFeaturePkg/BmcAcpi/BmcAcpi.inf
+  IpmiFeaturePkg/BmcAcpiState/BmcAcpiState.inf
+  IpmiFeaturePkg/BmcAcpiSwChild/BmcAcpiSwChild.inf
+  IpmiFeaturePkg/BmcAcpiSwChild/BmcAcpiSwChildStandaloneMm.inf
+  IpmiFeaturePkg/BmcElog/DxeBmcElog.inf
+  IpmiFeaturePkg/BmcElog/SmmBmcElog.inf
+  IpmiFeaturePkg/BmcElog/StandaloneMmBmcElog.inf
+  IpmiFeaturePkg/GenericElog/Dxe/GenericElog.inf
+  IpmiFeaturePkg/GenericElog/Smm/GenericElog.inf
+  IpmiFeaturePkg/GenericElog/Smm/GenericElogStandaloneMm.inf
+  IpmiFeaturePkg/Frb/FrbDxe.inf
+  IpmiFeaturePkg/IpmiRedirFru/IpmiRedirFru.inf
+  IpmiFeaturePkg/GenericFru/GenericFru.inf
+  IpmiFeaturePkg/IpmiInit/DxeIpmiInit.inf
+  IpmiFeaturePkg/OsWdt/OsWdt.inf
+  IpmiFeaturePkg/SolStatus/SolStatus.inf

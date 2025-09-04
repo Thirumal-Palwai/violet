@@ -43,10 +43,10 @@ The kdc.conf file may contain the following sections:
 [kdcdefaults]
 ~~~~~~~~~~~~~
 
-With two exceptions, relations in the [kdcdefaults] section specify
-default values for realm variables, to be used if the [realms]
-subsection does not contain a relation for the tag.  See the
-:ref:`kdc_realms` section for the definitions of these relations.
+Some relations in the [kdcdefaults] section specify default values for
+realm variables, to be used if the [realms] subsection does not
+contain a relation for the tag.  See the :ref:`kdc_realms` section for
+the definitions of these relations.
 
 * **host_based_services**
 * **kdc_listen**
@@ -56,6 +56,8 @@ subsection does not contain a relation for the tag.  See the
 * **no_host_referral**
 * **restrict_anonymous_to_tgt**
 
+The following [kdcdefaults] variables have no per-realm equivalent:
+
 **kdc_max_dgram_reply_size**
     Specifies the maximum packet size that can be sent over UDP.  The
     default value is 4096 bytes.
@@ -64,6 +66,12 @@ subsection does not contain a relation for the tag.  See the
     (Integer.)  Set the size of the listen queue length for the KDC
     daemon.  The value may be limited by OS settings.  The default
     value is 5.
+
+**spake_preauth_kdc_challenge**
+    (String.)  Specifies the group for a SPAKE optimistic challenge.
+    See the **spake_preauth_groups** variable in :ref:`libdefaults`
+    for possible values.  The default is not to issue an optimistic
+    challenge.  (New in release 1.17.)
 
 
 .. _kdc_realms:
@@ -86,9 +94,10 @@ The following tags may be specified in a [realms] subsection:
 **acl_file**
     (String.)  Location of the access control list file that
     :ref:`kadmind(8)` uses to determine which principals are allowed
-    which permissions on the Kerberos database.  The default value is
-    |kdcdir|\ ``/kadm5.acl``.  For more information on Kerberos ACL
-    file see :ref:`kadm5.acl(5)`.
+    which permissions on the Kerberos database.  To operate without an
+    ACL file, set this relation to the empty string with ``acl_file =
+    ""``.  The default value is |kdcdir|\ ``/kadm5.acl``.  For more
+    information on Kerberos ACL file see :ref:`kadm5.acl(5)`.
 
 **database_module**
     (String.)  This relation indicates the name of the configuration
@@ -125,9 +134,8 @@ The following tags may be specified in a [realms] subsection:
         the principal within this realm.
 
     **dup-skey**
-        Enabling this flag allows the principal to obtain a session
-        key for another user, permitting user-to-user authentication
-        for this principal.
+        Enabling this flag allows the KDC to issue user-to-user
+        service tickets for this principal.
 
     **forwardable**
         Enabling this flag allows the principal to obtain forwardable
@@ -184,7 +192,9 @@ The following tags may be specified in a [realms] subsection:
 
     **service**
         Enabling this flag allows the the KDC to issue service tickets
-        for this principal.
+        for this principal.  In release 1.17 and later, user-to-user
+        service tickets are still allowed if the **dup-skey** flag is
+        set.
 
     **tgt-based**
         Enabling this flag allows a principal to obtain tickets based
@@ -197,6 +207,11 @@ The following tags may be specified in a [realms] subsection:
     per line, with no additional whitespace.  If none is specified or
     if there is no policy assigned to the principal, no dictionary
     checks of passwords will be performed.
+
+**encrypted_challenge_indicator**
+    (String.)  Specifies the authentication indicator value that the KDC
+    asserts into tickets obtained using FAST encrypted challenge
+    pre-authentication.  New in 1.16.
 
 **host_based_services**
     (Whitespace- or comma-separated list.)  Lists services which will
@@ -212,10 +227,15 @@ The following tags may be specified in a [realms] subsection:
     retained for incremental propagation.  The default value is 1000.
     Prior to release 1.11, the maximum value was 2500.
 
+**iprop_replica_poll**
+    (Delta time string.)  Specifies how often the replica KDC polls
+    for new updates from the master.  The default value is ``2m``
+    (that is, two minutes).  New in release 1.17.
+
 **iprop_slave_poll**
-    (Delta time string.)  Specifies how often the slave KDC polls for
-    new updates from the master.  The default value is ``2m`` (that
-    is, two minutes).
+    (Delta time string.)  The name for **iprop_replica_poll** prior to
+    release 1.17.  Its value is used as a fallback if
+    **iprop_replica_poll** is not specified.
 
 **iprop_listen**
     (Whitespace- or comma-separated list.)  Specifies the iprop RPC
@@ -232,8 +252,8 @@ The following tags may be specified in a [realms] subsection:
 **iprop_port**
     (Port number.)  Specifies the port number to be used for
     incremental propagation.  When **iprop_enable** is true, this
-    relation is required in the slave configuration file, and this
-    relation or **iprop_listen** is required in the master
+    relation is required in the replica KDC configuration file, and
+    this relation or **iprop_listen** is required in the master
     configuration file, as there is no default port number.  Port
     numbers specified in **iprop_listen** entries will override this
     port number for the :ref:`kadmind(8)` daemon.
@@ -241,7 +261,7 @@ The following tags may be specified in a [realms] subsection:
 **iprop_resync_timeout**
     (Delta time string.)  Specifies the amount of time to wait for a
     full propagation to complete.  This is optional in configuration
-    files, and is used by slave KDCs only.  The default value is 5
+    files, and is used by replica KDCs only.  The default value is 5
     minutes (``5m``).  New in release 1.11.
 
 **iprop_logfile**
@@ -397,6 +417,12 @@ The following tags may be specified in a [realms] subsection:
     without allowing anonymous authentication to services.  The
     default value is false.  New in release 1.9.
 
+**spake_preauth_indicator**
+    (String.)  Specifies an authentication indicator value that the
+    KDC asserts into tickets obtained using SPAKE pre-authentication.
+    The default is not to add any indicators.  This option may be
+    specified multiple times.  New in release 1.17.
+
 **supported_enctypes**
     (List of *key*:*salt* strings.)  Specifies the default key/salt
     combinations of principals for this realm.  Any principals created
@@ -427,7 +453,6 @@ definitions of these relations.
 * **ldap_kadmind_sasl_mech**
 * **ldap_kadmind_sasl_realm**
 * **ldap_service_password_file**
-* **ldap_servers**
 * **ldap_conns_per_server**
 
 
@@ -455,8 +480,8 @@ The following tags may be specified in a [dbmodules] subsection:
 
 **db_library**
     This tag indicates the name of the loadable database module.  The
-    value should be ``db2`` for the DB2 module and ``kldap`` for the
-    LDAP module.
+    value should be ``db2`` for the DB2 module, ``klmdb`` for the LMDB
+    module, or ``kldap`` for the LDAP module.
 
 **disable_last_success**
     If set to ``true``, suppresses KDC updates to the "Last successful
@@ -531,6 +556,24 @@ The following tags may be specified in a [dbmodules] subsection:
     **ldap_kdc_sasl_authcid** or **ldap_kadmind_sasl_authcid** names
     for SASL authentication.  This file must be kept secure.
 
+**mapsize**
+    This LMDB-specific tag indicates the maximum size of the two
+    database environments in megabytes.  The default value is 128.
+    Increase this value to address "Environment mapsize limit reached"
+    errors.  New in release 1.17.
+
+**max_readers**
+    This LMDB-specific tag indicates the maximum number of concurrent
+    reading processes for the databases.  The default value is 128.
+    New in release 1.17.
+
+**nosync**
+    This LMDB-specific tag can be set to improve the throughput of
+    kadmind and other administrative agents, at the expense of
+    durability (recent database changes may not survive a power outage
+    or other sudden reboot).  It does not affect the throughput of the
+    KDC.  The default value is false.  New in release 1.17.
+
 **unlockiter**
     If set to ``true``, this DB2-specific tag causes iteration
     operations to release the database lock while processing each
@@ -593,32 +636,31 @@ Logging specifications may have the following forms:
 **SYSLOG**\ [\ **:**\ *severity*\ [\ **:**\ *facility*\ ]]
     This causes the daemon's logging messages to go to the system log.
 
-    The severity argument specifies the default severity of system log
-    messages.  This may be any of the following severities supported
-    by the syslog(3) call, minus the ``LOG_`` prefix: **EMERG**,
-    **ALERT**, **CRIT**, **ERR**, **WARNING**, **NOTICE**, **INFO**,
-    and **DEBUG**.
+    For backward compatibility, a severity argument may be specified,
+    and must be specified in order to specify a facility.  This
+    argument will be ignored.
 
     The facility argument specifies the facility under which the
     messages are logged.  This may be any of the following facilities
     supported by the syslog(3) call minus the LOG\_ prefix: **KERN**,
     **USER**, **MAIL**, **DAEMON**, **AUTH**, **LPR**, **NEWS**,
-    **UUCP**, **CRON**, and **LOCAL0** through **LOCAL7**.
-
-    If no severity is specified, the default is **ERR**.  If no
+    **UUCP**, **CRON**, and **LOCAL0** through **LOCAL7**.  If no
     facility is specified, the default is **AUTH**.
 
 In the following example, the logging messages from the KDC will go to
-the console and to the system log under the facility LOG_DAEMON with
-default severity of LOG_INFO; and the logging messages from the
-administrative server will be appended to the file
-``/var/adm/kadmin.log`` and sent to the device ``/dev/tty04``. ::
+the console and to the system log under the facility LOG_DAEMON, and
+the logging messages from the administrative server will be appended
+to the file ``/var/adm/kadmin.log`` and sent to the device
+``/dev/tty04``. ::
 
     [logging]
         kdc = CONSOLE
         kdc = SYSLOG:INFO:DAEMON
         admin_server = FILE:/var/adm/kadmin.log
         admin_server = DEVICE=/dev/tty04
+
+If no logging specification is given, the default is to use syslog.
+To disable logging entirely, specify ``default = DEVICE=/dev/null``.
 
 
 .. _otp:
@@ -765,9 +807,6 @@ For information about the syntax of some of these options, see
     pkinit is used to authenticate.  This option may be specified
     multiple times.  (New in release 1.14.)
 
-**pkinit_kdc_ocsp**
-    Specifies the location of the KDC's OCSP.
-
 **pkinit_pool**
     Specifies the location of intermediate certificates which may be
     used by the KDC to complete the trust chain between a client's
@@ -795,6 +834,10 @@ For information about the syntax of some of these options, see
     **pkinit_require_crl_checking** should be set to true if the
     policy is such that up-to-date CRLs must be present for every CA.
 
+**pkinit_require_freshness**
+    Specifies whether to require clients to include a freshness token
+    in PKINIT requests.  The default value is false.  (New in release
+    1.17.)
 
 .. _Encryption_types:
 
@@ -824,7 +867,7 @@ camellia256-cts-cmac camellia256-cts                 Camellia-256 CTS mode with 
 camellia128-cts-cmac camellia128-cts                 Camellia-128 CTS mode with CMAC
 des                                                  The DES family: des-cbc-crc, des-cbc-md5, and des-cbc-md4 (weak)
 des3                                                 The triple DES family: des3-cbc-sha1
-aes                                                  The AES family: aes256-cts-hmac-sha1-96 and aes128-cts-hmac-sha1-96
+aes                                                  The AES family: aes256-cts-hmac-sha1-96, aes128-cts-hmac-sha1-96, aes256-cts-hmac-sha384-192, and aes128-cts-hmac-sha256-128
 rc4                                                  The RC4 family: arcfour-hmac
 camellia                                             The Camellia family: camellia256-cts-cmac and camellia128-cts-cmac
 ==================================================== =========================================================

@@ -17,9 +17,10 @@
   EmbeddedPkg/EmbeddedPkg.dec
   MdeModulePkg/MdeModulePkg.dec
   MdePkg/MdePkg.dec
-  Silicon/Marvell/Marvell.dec
+  Silicon/Marvell/MarvellSiliconPkg/MarvellSiliconPkg.dec
 
 [LibraryClasses]
+  ArmadaBoardDescLib
   ArmadaSoCDescLib
   ArmLib
   ArmSmcLib
@@ -44,7 +45,7 @@
   gArmTokenSpaceGuid.PcdArmPrimaryCoreMask
   gArmTokenSpaceGuid.PcdArmPrimaryCore
 
-  gMarvellTokenSpaceGuid.PcdConfigSpaceBaseAddress
+  gMarvellSiliconTokenSpaceGuid.PcdConfigSpaceBaseAddress
 
 [Ppis]
   gArmMpCoreInfoPpiGuid

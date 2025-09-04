@@ -10,6 +10,7 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 #include <IndustryStandard/ArmStdSmc.h>
 #include <IndustryStandard/MvSmc.h>
 
+#include <Library/ArmadaBoardDescLib.h>
 #include <Library/ArmadaSoCDescLib.h>
 #include <Library/ArmPlatformLib.h>
 #include <Library/ArmSmcLib.h>
@@ -24,7 +25,7 @@ SPDX-License-Identifier: BSD-2-Clause-Patent
 #define MAX_VIRTUAL_MEMORY_MAP_DESCRIPTORS 16
 
 // DDR attributes
-#define DDR_ATTRIBUTES_CACHED           ARM_MEMORY_REGION_ATTRIBUTE_NONSECURE_WRITE_BACK
+#define DDR_ATTRIBUTES_CACHED           ARM_MEMORY_REGION_ATTRIBUTE_WRITE_BACK
 #define DDR_ATTRIBUTES_UNCACHED         ARM_MEMORY_REGION_ATTRIBUTE_UNCACHED_UNBUFFERED
 
 STATIC ARM_MEMORY_REGION_DESCRIPTOR mVirtualMemoryTable[MAX_VIRTUAL_MEMORY_MAP_DESCRIPTORS];
@@ -81,6 +82,9 @@ ArmPlatformGetVirtualMemoryMap (
   UINT64                        MemHighStart;
   UINT64                        MemHighSize;
   UINT64                        ConfigSpaceBaseAddr;
+  UINTN                         PcieControllerCount;
+  UINTN                         PcieIndex;
+  MV_PCIE_CONTROLLER CONST      *PcieControllers;
   EFI_RESOURCE_ATTRIBUTE_TYPE   ResourceAttributes;
   EFI_STATUS                    Status;
 
@@ -125,11 +129,23 @@ ArmPlatformGetVirtualMemoryMap (
   mVirtualMemoryTable[Index].Length          = MemLowSize;
   mVirtualMemoryTable[Index].Attributes      = DDR_ATTRIBUTES_CACHED;
 
-  // Configuration space
+  // SoC MMIO configuration space
   mVirtualMemoryTable[++Index].PhysicalBase  = ConfigSpaceBaseAddr;
   mVirtualMemoryTable[Index].VirtualBase     = ConfigSpaceBaseAddr;
   mVirtualMemoryTable[Index].Length          = SIZE_4GB - ConfigSpaceBaseAddr;
   mVirtualMemoryTable[Index].Attributes      = ARM_MEMORY_REGION_ATTRIBUTE_DEVICE;
+
+  // PCIE ECAM
+  Status = ArmadaBoardPcieControllerGet (&PcieControllers, &PcieControllerCount);
+  ASSERT_EFI_ERROR (Status);
+  for (PcieIndex = 0; PcieIndex < PcieControllerCount; PcieIndex++) {
+    mVirtualMemoryTable[++Index].PhysicalBase  = PcieControllers[PcieIndex].ConfigSpaceAddress;
+    mVirtualMemoryTable[Index].VirtualBase     = PcieControllers[PcieIndex].ConfigSpaceAddress;
+    mVirtualMemoryTable[Index].Length          = (PcieControllers[PcieIndex].ConfigSpaceSize == 0) ?
+                                                 SIZE_256MB :
+                                                 PcieControllers[PcieIndex].ConfigSpaceSize;
+    mVirtualMemoryTable[Index].Attributes      = ARM_MEMORY_REGION_ATTRIBUTE_DEVICE;
+  }
 
   if (MemSize > MemLowSize) {
     //

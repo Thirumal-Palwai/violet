@@ -12,6 +12,7 @@
 #include <Library/DebugLib.h>
 
 VOID
+EFIAPI
 ReportPrint (
   IN CONST CHAR8  *Format,
   ...
@@ -28,6 +29,7 @@ ReportPrint (
   } else {
     gST->ConOut->OutputString (gST->ConOut, String);
   }
+
   VA_END (Marker);
 }
 
@@ -42,7 +44,7 @@ ReportOutput (
 
   Length = AsciiStrLen (Output);
   for (Index = 0; Index < Length; Index += (sizeof (AsciiString) - 1)) {
-    AsciiStrCpyS (AsciiString, sizeof (AsciiString), &Output[Index]);
+    AsciiStrnCpyS (AsciiString, sizeof (AsciiString), &Output[Index], sizeof (AsciiString) - 1);
     ReportPrint ("%a", AsciiString);
   }
 }

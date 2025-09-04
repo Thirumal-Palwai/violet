@@ -21,8 +21,10 @@ Structure
 ---------
 
 The krb5.conf file is set up in the style of a Windows INI file.
-Sections are headed by the section name, in square brackets.  Each
-section may contain zero or more relations, of the form::
+Lines beginning with '#' or ';' (possibly after initial whitespace)
+are ignored as comments.  Sections are headed by the section name, in
+square brackets.  Each section may contain zero or more relations, of
+the form::
 
     foo = bar
 
@@ -33,17 +35,11 @@ or::
         baz = quux
     }
 
-Placing a '\*' at the end of a line indicates that this is the *final*
-value for the tag.  This means that neither the remainder of this
-configuration file nor any other configuration file will be checked
-for any other values for this tag.
-
-For example, if you have the following lines::
-
-    foo = bar*
-    foo = baz
-
-then the second value of ``foo`` (``baz``) would never be read.
+Placing a '\*' after the closing bracket of a section name indicates
+that the section is *final*, meaning that if the same section appears
+within a later file specified in **KRB5_CONFIG**, it will be ignored.
+A subsection can be marked as final by placing a '\*' after either the
+tag name or the closing brace.
 
 The krb5.conf file can include other files using either of the
 following directives at the beginning of a line::
@@ -55,9 +51,12 @@ following directives at the beginning of a line::
 directory must exist and be readable.  Including a directory includes
 all files within the directory whose names consist solely of
 alphanumeric characters, dashes, or underscores.  Starting in release
-1.15, files with names ending in ".conf" are also included.  Included
-profile files are syntactically independent of their parents, so each
-included file must begin with a section header.
+1.15, files with names ending in ".conf" are also included, unless the
+name begins with ".".  Included profile files are syntactically
+independent of their parents, so each included file must begin with a
+section header.  Starting in release 1.17, files are read in
+alphanumeric order; in previous releases, they may be read in any
+order.
 
 The krb5.conf file can specify that configuration should be obtained
 from a loadable module, rather than the file itself, using the
@@ -262,7 +261,7 @@ The libdefaults section may contain any of the following relations:
     the local user or by root.
 
 **kcm_mach_service**
-    On OS X only, determines the name of the bootstrap service used to
+    On macOS only, determines the name of the bootstrap service used to
     contact the KCM daemon for the KCM credential cache type.  If the
     value is ``-``, Mach RPC will not be used to contact the KCM
     daemon.  The default value is ``org.h5l.kcm``.
@@ -323,7 +322,8 @@ The libdefaults section may contain any of the following relations:
 **plugin_base_dir**
     If set, determines the base directory where krb5 plugins are
     located.  The default value is the ``krb5/plugins`` subdirectory
-    of the krb5 library directory.
+    of the krb5 library directory.  This relation is subject to
+    parameter expansion (see below) in release 1.17 and later.
 
 **preferred_preauth_types**
     This allows you to set the preferred preauthentication types which
@@ -363,6 +363,21 @@ The libdefaults section may contain any of the following relations:
     DES instead.  This field is ignored when its value is incompatible
     with the session key type.  See the **kdc_req_checksum_type**
     configuration option for the possible values and their meanings.
+
+**spake_preauth_groups**
+    A whitespace or comma-separated list of words which specifies the
+    groups allowed for SPAKE preauthentication.  The possible values
+    are:
+
+    ============ ================================
+    edwards25519 Edwards25519 curve (:rfc:`7748`)
+    P-256        NIST P-256 curve (:rfc:`5480`)
+    P-384        NIST P-384 curve (:rfc:`5480`)
+    P-521        NIST P-521 curve (:rfc:`5480`)
+    ============ ================================
+
+    The default value for the client is ``edwards25519``.  The default
+    value for the KDC is empty.  New in release 1.17.
 
 **ticket_lifetime**
     (:ref:`duration` string.)  Sets the default lifetime for initial
@@ -433,7 +448,7 @@ following tags may be specified in the realm's subsection:
                 auth_to_local = RULE:[2:$1](johndoe)s/^.*$/guest/
                 auth_to_local = RULE:[2:$1;$2](^.*;admin$)s/;admin$//
                 auth_to_local = RULE:[2:$2](^.*;root)s/^.*$/root/
-                auto_to_local = DEFAULT
+                auth_to_local = DEFAULT
             }
 
     would result in any principal without ``root`` or ``admin`` as the
@@ -454,6 +469,16 @@ following tags may be specified in the realm's subsection:
     translating Kerberos 4 service principals to Kerberos 5 principals
     (for example, when converting ``rcmd.hostname`` to
     ``host/hostname.domain``).
+
+**disable_encrypted_timestamp**
+    If this flag is true, the client will not perform encrypted
+    timestamp preauthentication if requested by the KDC.  Setting this
+    flag can help to prevent dictionary attacks by active attackers,
+    if the realm's KDCs support SPAKE preauthentication or if initial
+    authentication always uses another mechanism or always uses FAST.
+    This flag persists across client referrals during initial
+    authentication.  This flag does not prevent the KDC from offering
+    encrypted timestamp.  New in release 1.17.
 
 **http_anchors**
     When KDCs and kpasswd servers are accessed through HTTPS proxies, this tag
@@ -493,7 +518,8 @@ following tags may be specified in the realm's subsection:
 
 **kpasswd_server**
     Points to the server where all the password changes are performed.
-    If there is no such entry, the port 464 on the **admin_server**
+    If there is no such entry, DNS will be queried (unless forbidden
+    by **dns_lookup_kdc**).  Finally, port 464 on the **admin_server**
     host will be tried.
 
 **master_kdc**
@@ -501,8 +527,8 @@ following tags may be specified in the realm's subsection:
     one case: If an attempt to get credentials fails because of an
     invalid password, the client software will attempt to contact the
     master KDC, in case the user's password has just been changed, and
-    the updated database has not been propagated to the slave servers
-    yet.
+    the updated database has not been propagated to the replica
+    servers yet.
 
 **v4_instance_convert**
     This subsection allows the administrator to configure exceptions
@@ -744,6 +770,10 @@ disabled with the disable tag):
     Uses the service realm to guess an appropriate cache from the
     collection
 
+**hostname**
+    If the service principal is host-based, uses the service hostname
+    to guess an appropriate cache from the collection
+
 .. _pwqual:
 
 pwqual interface
@@ -776,6 +806,26 @@ principal creation, modification, password changes and deletion.  This
 interface can be used to write a plugin to synchronize MIT Kerberos
 with another database such as Active Directory.  No plugins are built
 in for this interface.
+
+.. _kadm5_auth:
+
+kadm5_auth interface
+####################
+
+The kadm5_auth section (introduced in release 1.16) controls modules
+for the kadmin authorization interface, which determines whether a
+client principal is allowed to perform a kadmin operation.  The
+following built-in modules exist for this interface:
+
+**acl**
+    This module reads the :ref:`kadm5.acl(5)` file, and authorizes
+    operations which are allowed according to the rules in the file.
+
+**self**
+    This module authorizes self-service operations including password
+    changes, creation of new random keys, fetching the client's
+    principal record or string attributes, and fetching the policy
+    record associated with the client principal.
 
 .. _clpreauth:
 
@@ -857,6 +907,32 @@ built-in modules exist for this interface:
 **an2ln**
     This module authorizes a principal to a local account if the
     principal name maps to the local account name.
+
+.. _certauth:
+
+certauth interface
+##################
+
+The certauth section (introduced in release 1.16) controls modules for
+the certificate authorization interface, which determines whether a
+certificate is allowed to preauthenticate a user via PKINIT.  The
+following built-in modules exist for this interface:
+
+**pkinit_san**
+    This module authorizes the certificate if it contains a PKINIT
+    Subject Alternative Name for the requested client principal, or a
+    Microsoft UPN SAN matching the principal if **pkinit_allow_upn**
+    is set to true for the realm.
+
+**pkinit_eku**
+    This module rejects the certificate if it does not contain an
+    Extended Key Usage attribute consistent with the
+    **pkinit_eku_checking** value for the realm.
+
+**dbmatch**
+    This module authorizes or rejects the certificate according to
+    whether it matches the **pkinit_cert_match** string attribute on
+    the client principal, if that attribute is present.
 
 
 PKINIT options
@@ -1053,11 +1129,11 @@ PKINIT krb5.conf options
 
 **pkinit_identities**
     Specifies the location(s) to be used to find the user's X.509
-    identity information.  This option may be specified multiple
-    times.  Each value is attempted in order until identity
-    information is found and authentication is attempted.  Note that
-    these values are not used if the user specifies
-    **X509_user_identity** on the command line.
+    identity information.  If this option is specified multiple times,
+    the first valid value is used; this can be used to specify an
+    environment variable (with **ENV:**\ *envvar*) followed by a
+    default value.  Note that these values are not used if the user
+    specifies **X509_user_identity** on the command line.
 
 **pkinit_kdc_hostname**
     The presense of this option indicates that the client is willing

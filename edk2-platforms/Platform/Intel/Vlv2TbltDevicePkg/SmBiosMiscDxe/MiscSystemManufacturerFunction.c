@@ -1,6 +1,6 @@
 /*++
 
-Copyright (c) 2009 - 2019, Intel Corporation. All rights reserved.<BR>
+Copyright (c) 2009 - 2020, Intel Corporation. All rights reserved.<BR>
 
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
@@ -47,6 +47,7 @@ AddSmbiosManuCallback (
 {
 
   CHAR8                             *OptionalStrStart;
+  UINTN                             OptionalStrSize;
   UINTN                             ManuStrLen;
   UINTN                             VerStrLen;
   UINTN                             PdNameStrLen;
@@ -101,59 +102,59 @@ AddSmbiosManuCallback (
       HiiSetString(mHiiHandle,STRING_TOKEN(STR_MISC_SYSTEM_PRODUCT_NAME), Buffer, NULL);
       UnicodeSPrint (Buffer, sizeof (Buffer),L"%s",L"A0");
       HiiSetString(mHiiHandle,STRING_TOKEN(STR_MISC_SYSTEM_VERSION), Buffer, NULL);
-      DEBUG ((EFI_D_ERROR, "A0 Stepping Detected\n"));
+      DEBUG ((DEBUG_ERROR, "A0 Stepping Detected\n"));
       break;
     case PchA1:
       UnicodeSPrint (Buffer, sizeof (Buffer),L"%s%s", PlatformNameBuffer, L"A1 PLATFORM");
       HiiSetString(mHiiHandle,STRING_TOKEN(STR_MISC_SYSTEM_PRODUCT_NAME), Buffer, NULL);
       UnicodeSPrint (Buffer, sizeof (Buffer),L"%s",L"A1");
       HiiSetString(mHiiHandle,STRING_TOKEN(STR_MISC_SYSTEM_VERSION), Buffer, NULL);
-      DEBUG ((EFI_D_ERROR, "A1 Stepping Detected\n"));
+      DEBUG ((DEBUG_ERROR, "A1 Stepping Detected\n"));
       break;
     case PchB0:
       UnicodeSPrint (Buffer, sizeof (Buffer),L"%s%s", PlatformNameBuffer, L"B0 PLATFORM");
       HiiSetString(mHiiHandle,STRING_TOKEN(STR_MISC_SYSTEM_PRODUCT_NAME), Buffer, NULL);
       UnicodeSPrint (Buffer, sizeof (Buffer),L"%s",L"B0");
       HiiSetString(mHiiHandle,STRING_TOKEN(STR_MISC_SYSTEM_VERSION), Buffer, NULL);
-      DEBUG ((EFI_D_ERROR, "B0 Stepping Detected\n"));
+      DEBUG ((DEBUG_ERROR, "B0 Stepping Detected\n"));
       break;
     case PchB1:
       UnicodeSPrint (Buffer, sizeof (Buffer),L"%s%s", PlatformNameBuffer, L"B1 PLATFORM");
       HiiSetString(mHiiHandle,STRING_TOKEN(STR_MISC_SYSTEM_PRODUCT_NAME), Buffer, NULL);
       UnicodeSPrint (Buffer, sizeof (Buffer),L"%s",L"B1");
       HiiSetString(mHiiHandle,STRING_TOKEN(STR_MISC_SYSTEM_VERSION), Buffer, NULL);
-      DEBUG ((EFI_D_ERROR, "B1 Stepping Detected\n"));
+      DEBUG ((DEBUG_ERROR, "B1 Stepping Detected\n"));
       break;
     case PchB2:
       UnicodeSPrint (Buffer, sizeof (Buffer),L"%s%s", PlatformNameBuffer, L"B2 PLATFORM");
       HiiSetString(mHiiHandle,STRING_TOKEN(STR_MISC_SYSTEM_PRODUCT_NAME), Buffer, NULL);
       UnicodeSPrint (Buffer, sizeof (Buffer),L"%s",L"B2");
       HiiSetString(mHiiHandle,STRING_TOKEN(STR_MISC_SYSTEM_VERSION), Buffer, NULL);
-      DEBUG ((EFI_D_ERROR, "B2 Stepping Detected\n"));
+      DEBUG ((DEBUG_ERROR, "B2 Stepping Detected\n"));
       break;
     case PchB3:
       UnicodeSPrint (Buffer, sizeof (Buffer),L"%s%s", PlatformNameBuffer, L"B3 PLATFORM");
       HiiSetString(mHiiHandle,STRING_TOKEN(STR_MISC_SYSTEM_PRODUCT_NAME), Buffer, NULL);
       UnicodeSPrint (Buffer, sizeof (Buffer),L"%s",L"B3");
       HiiSetString(mHiiHandle,STRING_TOKEN(STR_MISC_SYSTEM_VERSION), Buffer, NULL);
-      DEBUG ((EFI_D_ERROR, "B3 Stepping Detected\n"));
+      DEBUG ((DEBUG_ERROR, "B3 Stepping Detected\n"));
       break;
     case PchC0:
       UnicodeSPrint (Buffer, sizeof (Buffer),L"%s%s", PlatformNameBuffer, L"C0 PLATFORM");
       HiiSetString(mHiiHandle,STRING_TOKEN(STR_MISC_SYSTEM_PRODUCT_NAME), Buffer, NULL);
       UnicodeSPrint (Buffer, sizeof (Buffer),L"%s",L"C0");
       HiiSetString(mHiiHandle,STRING_TOKEN(STR_MISC_SYSTEM_VERSION), Buffer, NULL);
-      DEBUG ((EFI_D_ERROR, "C0 Stepping Detected\n"));
+      DEBUG ((DEBUG_ERROR, "C0 Stepping Detected\n"));
       break;
    case PchD0:
       UnicodeSPrint (Buffer, sizeof (Buffer),L"%s%s", PlatformNameBuffer, L"D0 PLATFORM");
       HiiSetString(mHiiHandle,STRING_TOKEN(STR_MISC_SYSTEM_PRODUCT_NAME), Buffer, NULL);
       UnicodeSPrint (Buffer, sizeof (Buffer),L"%s",L"D0");
       HiiSetString(mHiiHandle,STRING_TOKEN(STR_MISC_SYSTEM_VERSION), Buffer, NULL);
-      DEBUG ((EFI_D_ERROR, "D0 Stepping Detected\n"));
+      DEBUG ((DEBUG_ERROR, "D0 Stepping Detected\n"));
       break;
     default:
-      DEBUG ((EFI_D_ERROR, "Unknow Stepping Detected\n"));
+      DEBUG ((DEBUG_ERROR, "Unknow Stepping Detected\n"));
       break;
     }
 
@@ -245,8 +246,9 @@ AddSmbiosManuCallback (
   //
   // Two zeros following the last string.
   //
-  SmbiosRecord = AllocatePool(sizeof (SMBIOS_TABLE_TYPE1) + ManuStrLen + 1 + PdNameStrLen + 1 + VerStrLen + 1 + SerialNumStrLen + 1 + SkuNumberStrLen + 1 + FamilyNameStrLen + 1 + 1);
-  ZeroMem(SmbiosRecord, sizeof (SMBIOS_TABLE_TYPE1) + ManuStrLen + 1 + PdNameStrLen + 1 + VerStrLen + 1 + SerialNumStrLen + 1 + SkuNumberStrLen + 1 + FamilyNameStrLen + 1 + 1);
+  OptionalStrSize = ManuStrLen + 1 + PdNameStrLen + 1 + VerStrLen + 1 + SerialNumStrLen + 1 + SkuNumberStrLen + 1 + FamilyNameStrLen + 1 + 1;
+  SmbiosRecord = AllocatePool(sizeof (SMBIOS_TABLE_TYPE1) + OptionalStrSize);
+  ZeroMem(SmbiosRecord, sizeof (SMBIOS_TABLE_TYPE1) + OptionalStrSize);
 
   SmbiosRecord->Hdr.Type = EFI_SMBIOS_TYPE_SYSTEM_INFORMATION;
   SmbiosRecord->Hdr.Length = sizeof (SMBIOS_TABLE_TYPE1);
@@ -290,13 +292,22 @@ AddSmbiosManuCallback (
   SmbiosRecord->WakeUpType = (UINT8)ForType1InputData->SystemWakeupType;
 
   OptionalStrStart = (CHAR8 *)(SmbiosRecord + 1);
-  UnicodeStrToAsciiStr(Manufacturer, OptionalStrStart);
-  UnicodeStrToAsciiStr(ProductName, OptionalStrStart + ManuStrLen + 1);
-  UnicodeStrToAsciiStr(Version, OptionalStrStart + ManuStrLen + 1 + PdNameStrLen + 1);
-  UnicodeStrToAsciiStr(SerialNumber, OptionalStrStart + ManuStrLen + 1 + PdNameStrLen + 1 + VerStrLen + 1);
-
-  UnicodeStrToAsciiStr(SkuNumber, OptionalStrStart + ManuStrLen + 1 + PdNameStrLen + 1 +  VerStrLen + 1 + SerialNumStrLen + 1);
-  UnicodeStrToAsciiStr(FamilyName, OptionalStrStart + ManuStrLen + 1 + PdNameStrLen + 1 + VerStrLen + 1 + SerialNumStrLen + 1 + SkuNumberStrLen +1);
+  UnicodeStrToAsciiStrS (Manufacturer, OptionalStrStart, OptionalStrSize);
+  OptionalStrStart += (ManuStrLen + 1);
+  OptionalStrSize  -= (ManuStrLen + 1);
+  UnicodeStrToAsciiStrS (ProductName, OptionalStrStart, OptionalStrSize);
+  OptionalStrStart += (PdNameStrLen + 1);
+  OptionalStrSize  -= (PdNameStrLen + 1);
+  UnicodeStrToAsciiStrS (Version, OptionalStrStart, OptionalStrSize);
+  OptionalStrStart += (VerStrLen + 1);
+  OptionalStrSize  -= (VerStrLen + 1);
+  UnicodeStrToAsciiStrS (SerialNumber, OptionalStrStart, OptionalStrSize);
+  OptionalStrStart += (SerialNumStrLen + 1);
+  OptionalStrSize  -= (SerialNumStrLen + 1);
+  UnicodeStrToAsciiStrS (SkuNumber, OptionalStrStart, OptionalStrSize);
+  OptionalStrStart += (SkuNumberStrLen + 1);
+  OptionalStrSize  -= (SkuNumberStrLen + 1);
+  UnicodeStrToAsciiStrS (FamilyName, OptionalStrStart, OptionalStrSize);
 
   //
   // Now we have got the full smbios record, call smbios protocol to add this record.
@@ -333,7 +344,7 @@ MISC_SMBIOS_TABLE_FUNCTION(MiscSystemManufacturer)
 
   if (CallbackIsInstalledManu == FALSE) {
     CallbackIsInstalledManu = TRUE;        	// Prevent more than 1 callback.
-    DEBUG ((EFI_D_INFO, "Create Smbios Manu callback.\n"));
+    DEBUG ((DEBUG_INFO, "Create Smbios Manu callback.\n"));
 
     //
     // gEfiDxeSmmReadyToLockProtocolGuid is ready

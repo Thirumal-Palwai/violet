@@ -42,6 +42,7 @@ gSiPkgTokenSpaceGuid.PcdSiCatalogDebugEnable         |FALSE
 [PcdsFixedAtBuild.common]
 gEfiMdePkgTokenSpaceGuid.PcdPciExpressBaseAddress       |0xE0000000
 gSiPkgTokenSpaceGuid.PcdTemporaryPciExpressRegionLength |0x10000000
+gIntelSiliconPkgTokenSpaceGuid.PcdAcpiBaseAddress       |0x1800
 
   gSiPkgTokenSpaceGuid.PcdSiliconInitTempPciBusMin        |10
   gSiPkgTokenSpaceGuid.PcdSiliconInitTempPciBusMax        |18
@@ -78,6 +79,8 @@ gUefiCpuPkgTokenSpaceGuid.PcdCpuApTargetCstate|0
   # Definition for Build Flag
   #
   !include $(PLATFORM_SI_PACKAGE)/SiPkgBuildOption.dsc
+
+!include MdePkg/MdeLibs.dsc.inc
 
 [LibraryClasses.common]
   #

@@ -31,7 +31,9 @@ OPTIONS
 -------
 
 The **-r** *realm* option specifies the realm for which the server
-should provide service.
+should provide service.  This option may be specified multiple times
+to serve multiple realms.  If no **-r** option is given, the default
+realm (as specified in :ref:`krb5.conf(5)`) will be served.
 
 The **-d** *dbname* option specifies the name under which the
 principal database can be found.  This option does not apply to the
@@ -48,21 +50,19 @@ The **-m** option specifies that the master database password should
 be fetched from the keyboard rather than from a stash file.
 
 The **-n** option specifies that the KDC does not put itself in the
-background and does not disassociate itself from the terminal.  In
-normal operation, you should always allow the KDC to place itself in
-the background.
+background and does not disassociate itself from the terminal.
 
 The **-P** *pid_file* option tells the KDC to write its PID into
 *pid_file* after it starts up.  This can be used to identify whether
 the KDC is still running and to allow init scripts to stop the correct
 process.
 
-The **-p** *portnum* option specifies the default UDP port numbers
-which the KDC should listen on for Kerberos version 5 requests, as a
-comma-separated list.  This value overrides the UDP port numbers
-specified in the :ref:`kdcdefaults` section of :ref:`kdc.conf(5)`, but
-may be overridden by realm-specific values.  If no value is given from
-any source, the default port is 88.
+The **-p** *portnum* option specifies the default UDP and TCP port
+numbers which the KDC should listen on for Kerberos version 5
+requests, as a comma-separated list.  This value overrides the port
+numbers specified in the :ref:`kdcdefaults` section of
+:ref:`kdc.conf(5)`, but may be overridden by realm-specific values.
+If no value is given from any source, the default port is 88.
 
 The **-w** *numworkers* option tells the KDC to fork *numworkers*
 processes to listen to the KDC ports and process requests in parallel.
@@ -71,13 +71,6 @@ the **-P** option is also given) acts as a supervisor.  The supervisor
 will relay SIGHUP signals to the worker subprocesses, and will
 terminate the worker subprocess if the it is itself terminated or if
 any other worker process exits.
-
-.. note::
-
-          On operating systems which do not have *pktinfo* support,
-          using worker processes will prevent the KDC from listening
-          for UDP packets on network interfaces created after the KDC
-          starts.
 
 The **-x** *db_args* option specifies database-specific arguments.
 See :ref:`Database Options <dboptions>` in :ref:`kadmin(1)` for
@@ -110,14 +103,12 @@ description for further details.
 ENVIRONMENT
 -----------
 
-krb5kdc uses the following environment variables:
-
-* **KRB5_CONFIG**
-* **KRB5_KDC_PROFILE**
+See :ref:`kerberos(7)` for a description of Kerberos environment
+variables.
 
 
 SEE ALSO
 --------
 
 :ref:`kdb5_util(8)`, :ref:`kdc.conf(5)`, :ref:`krb5.conf(5)`,
-:ref:`kdb5_ldap_util(8)`
+:ref:`kdb5_ldap_util(8)`, :ref:`kerberos(7)`

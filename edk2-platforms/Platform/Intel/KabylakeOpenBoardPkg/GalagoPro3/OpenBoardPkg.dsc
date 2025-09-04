@@ -1,7 +1,7 @@
 ## @file
 #  The main build description file for the GalagoPro3 board.
 #
-# Copyright (c) 2019, Intel Corporation. All rights reserved.<BR>
+# Copyright (c) 2019 - 2022, Intel Corporation. All rights reserved.<BR>
 #
 # SPDX-License-Identifier: BSD-2-Clause-Patent
 #
@@ -38,7 +38,8 @@
   #
   # Include PCD configuration for this board.
   #
-  !include AdvancedFeaturePkg/TemporaryBuildWorkaround/TemporaryBuildWorkaround.dsc
+  !include AdvancedFeaturePkg/Include/AdvancedFeaturesPcd.dsc
+
   !include OpenBoardPkgPcd.dsc
   !include AdvancedFeaturePkg/Include/AdvancedFeatures.dsc
 
@@ -70,15 +71,11 @@
 #######################################
 # Component Includes
 #######################################
-# @todo: Change below line to [Components.$(PEI_ARCH)] after https://bugzilla.tianocore.org/show_bug.cgi?id=2308
-#        is completed
-[Components.IA32]
+[Components.$(PEI_ARCH)]
 !include $(PLATFORM_PACKAGE)/Include/Dsc/CorePeiInclude.dsc
 !include $(PLATFORM_SI_PACKAGE)/SiPkgPei.dsc
 
-# @todo: Change below line to [Components.$(DXE_ARCH)] after https://bugzilla.tianocore.org/show_bug.cgi?id=2308
-#        is completed
-[Components.X64]
+[Components.$(DXE_ARCH)]
 !include $(PLATFORM_PACKAGE)/Include/Dsc/CoreDxeInclude.dsc
 !include $(PLATFORM_SI_PACKAGE)/SiPkgDxe.dsc
 
@@ -127,6 +124,8 @@
   GpioExpanderLib|$(PLATFORM_BOARD_PACKAGE)/Library/BaseGpioExpanderLib/BaseGpioExpanderLib.inf
   I2cAccessLib|$(PLATFORM_BOARD_PACKAGE)/Library/PeiI2cAccessLib/PeiI2cAccessLib.inf
   PlatformSecLib|$(PLATFORM_PACKAGE)/FspWrapper/Library/SecFspWrapperPlatformSecLib/SecFspWrapperPlatformSecLib.inf
+  HdmiDebugGpioInitLib|$(PLATFORM_BOARD_PACKAGE)/Library/HdmiDebugGpioInitLib/HdmiDebugGpioInitLib.inf
+  HdmiDebugPchDetectionLib|$(PLATFORM_BOARD_PACKAGE)/Library/HdmiDebugPchDetectionLib/HdmiDebugPchDetectionLib.inf
 
   # Thunderbolt
 !if gKabylakeOpenBoardPkgTokenSpaceGuid.PcdTbtEnable == TRUE
@@ -140,6 +139,12 @@
   PlatformHookLib|$(PROJECT)/Library/BasePlatformHookLib/BasePlatformHookLib.inf
   SiliconPolicyUpdateLib|$(PROJECT)/FspWrapper/Library/PeiSiliconPolicyUpdateLibFsp/PeiSiliconPolicyUpdateLibFsp.inf
 
+[LibraryClasses.common.PEI_CORE]
+!if $(TARGET) == DEBUG && gKabylakeOpenBoardPkgTokenSpaceGuid.PcdI2cHdmiDebugPortEnable == TRUE
+  DebugLib|MdePkg/Library/BaseDebugLibSerialPort/BaseDebugLibSerialPort.inf
+  SerialPortLib|$(PLATFORM_BOARD_PACKAGE)/Library/I2cHdmiDebugSerialPortLib/PeiI2cHdmiDebugSerialPortLib.inf
+!endif
+
 [LibraryClasses.IA32.SEC]
   #######################################
   # Edk2 Packages
@@ -150,16 +155,28 @@
   #######################################
   # Platform Package
   #######################################
-  SecBoardInitLib|$(PLATFORM_PACKAGE)/PlatformInit/Library/SecBoardInitLibNull/SecBoardInitLibNull.inf
   TestPointCheckLib|$(PLATFORM_PACKAGE)/Test/Library/TestPointCheckLib/SecTestPointCheckLib.inf
+  SiliconPolicyUpdateLib|$(PLATFORM_PACKAGE)/PlatformInit/Library/SiliconPolicyUpdateLibNull/SiliconPolicyUpdateLibNull.inf
+
+  #######################################
+  # Board-specific
+  #######################################
+  SecBoardInitLib|$(PLATFORM_BOARD_PACKAGE)/Library/SecBoardInitLib/SecBoardInitLib.inf
 
 [LibraryClasses.common.PEIM]
   #######################################
   # Edk2 Packages
   #######################################
+!if $(TARGET) == DEBUG
   DebugLib|MdeModulePkg/Library/PeiDxeDebugLibReportStatusCode/PeiDxeDebugLibReportStatusCode.inf
+!endif
   SerialPortLib|MdePkg/Library/BaseSerialPortLibNull/BaseSerialPortLibNull.inf
-  SetCacheMtrrLib|$(PLATFORM_PACKAGE)/Library/SetCacheMtrrLib/SetCacheMtrrLibNull.inf
+
+  #######################################
+  # Silicon Package
+  #######################################
+  ReportCpuHobLib|IntelSiliconPkg/Library/ReportCpuHobLib/ReportCpuHobLib.inf
+  SmmAccessLib|IntelSiliconPkg/Feature/SmmAccess/Library/PeiSmmAccessLibSmramc/PeiSmmAccessLib.inf
 
   #######################################
   # Platform Package
@@ -171,6 +188,7 @@
 !if $(TARGET) == DEBUG
   TestPointCheckLib|$(PLATFORM_PACKAGE)/Test/Library/TestPointCheckLib/PeiTestPointCheckLib.inf
 !endif
+  SetCacheMtrrLib|$(PLATFORM_PACKAGE)/Library/SetCacheMtrrLib/SetCacheMtrrLibNull.inf
 
   #######################################
   # Board Package
@@ -181,7 +199,19 @@
   PeiTbtPolicyLib|$(PLATFORM_BOARD_PACKAGE)/Features/Tbt/Library/PeiTbtPolicyLib/PeiTbtPolicyLib.inf
 !endif
 
+[LibraryClasses.common.DXE_CORE]
+!if $(TARGET) == DEBUG
+  DebugLib|MdeModulePkg/Library/PeiDxeDebugLibReportStatusCode/PeiDxeDebugLibReportStatusCode.inf
+!endif
+
 [LibraryClasses.common.DXE_DRIVER]
+  #######################################
+  # Edk2 Packages
+  #######################################
+!if $(TARGET) == DEBUG
+  DebugLib|MdeModulePkg/Library/PeiDxeDebugLibReportStatusCode/PeiDxeDebugLibReportStatusCode.inf
+!endif
+
   #######################################
   # Silicon Initialization Package
   #######################################
@@ -202,21 +232,40 @@
 !endif
 
   #######################################
+  # Board Package
+  #######################################
+  BoardBdsHookLib|BoardModulePkg/Library/BoardBdsHookLib/BoardBdsHookLib.inf
+  BoardBootManagerLib|BoardModulePkg/Library/BoardBootManagerLib/BoardBootManagerLib.inf
+
+  #######################################
   # Board-specific
   #######################################
   SiliconPolicyUpdateLib|$(PROJECT)/Policy/Library/DxeSiliconPolicyUpdateLib/DxeSiliconPolicyUpdateLib.inf
 
 [LibraryClasses.X64.DXE_RUNTIME_DRIVER]
   #######################################
+  # Edk2 Packages
+  #######################################
+!if $(TARGET) == DEBUG
+  DebugLib|MdeModulePkg/Library/PeiDxeDebugLibReportStatusCode/PeiDxeDebugLibReportStatusCode.inf
+!endif
+
+  #######################################
   # Silicon Initialization Package
   #######################################
   ResetSystemLib|$(PLATFORM_SI_PACKAGE)/Pch/Library/DxeRuntimeResetSystemLib/DxeRuntimeResetSystemLib.inf
+
+[LibraryClasses.common.SMM_CORE]
+!if $(TARGET) == DEBUG && gKabylakeOpenBoardPkgTokenSpaceGuid.PcdI2cHdmiDebugPortEnable == TRUE
+  DebugLib|MdePkg/Library/BaseDebugLibSerialPort/BaseDebugLibSerialPort.inf
+  SerialPortLib|$(PLATFORM_BOARD_PACKAGE)/Library/I2cHdmiDebugSerialPortLib/SmmI2cHdmiDebugSerialPortLib.inf
+!endif
 
 [LibraryClasses.X64.DXE_SMM_DRIVER]
   #######################################
   # Silicon Initialization Package
   #######################################
-  SpiFlashCommonLib|$(PLATFORM_SI_PACKAGE)/Pch/Library/SmmSpiFlashCommonLib/SmmSpiFlashCommonLib.inf
+  SpiFlashCommonLib|IntelSiliconPkg/Library/SmmSpiFlashCommonLib/SmmSpiFlashCommonLib.inf
 
   #######################################
   # Platform Package
@@ -226,14 +275,13 @@
   TestPointLib|$(PLATFORM_PACKAGE)/Test/Library/TestPointLib/SmmTestPointLib.inf
 !if $(TARGET) == DEBUG
   TestPointCheckLib|$(PLATFORM_PACKAGE)/Test/Library/TestPointCheckLib/SmmTestPointCheckLib.inf
+  DebugLib|MdeModulePkg/Library/PeiDxeDebugLibReportStatusCode/PeiDxeDebugLibReportStatusCode.inf
 !endif
 
 #######################################
 # PEI Components
 #######################################
-# @todo: Change below line to [Components.$(PEI_ARCH)] after https://bugzilla.tianocore.org/show_bug.cgi?id=2308
-#        is completed
-[Components.IA32]
+[Components.$(PEI_ARCH)]
   #######################################
   # Edk2 Packages
   #######################################
@@ -245,6 +293,9 @@
   MdeModulePkg/Universal/StatusCodeHandler/Pei/StatusCodeHandlerPei.inf {
     <LibraryClasses>
       DebugLib|MdePkg/Library/BaseDebugLibNull/BaseDebugLibNull.inf
+!if $(TARGET) == DEBUG  && gKabylakeOpenBoardPkgTokenSpaceGuid.PcdI2cHdmiDebugPortEnable == TRUE
+      SerialPortLib|$(PLATFORM_BOARD_PACKAGE)/Library/I2cHdmiDebugSerialPortLib/PeiI2cHdmiDebugSerialPortLib.inf
+!endif
   }
 
   IntelFsp2WrapperPkg/FspmWrapperPeim/FspmWrapperPeim.inf {
@@ -289,7 +340,7 @@
     #
     # Hook a library constructor to update some policy fields when policy is installed.
     #
-    NULL|$(PROJECT)/FspWrapper/Library/PeiSiliconPolicyNotifyLib/PeiPreMemSiliconPolicyNotifyLib.inf
+    NULL|$(PLATFORM_BOARD_PACKAGE)/FspWrapper/Library/PeiSiliconPolicyNotifyLib/PeiPreMemSiliconPolicyNotifyLib.inf
   }
   $(PLATFORM_PACKAGE)/PlatformInit/SiliconPolicyPei/SiliconPolicyPeiPostMem.inf
 
@@ -309,12 +360,30 @@
 #######################################
 # DXE Components
 #######################################
-# @todo: Change below line to [Components.$(DXE_ARCH)] after https://bugzilla.tianocore.org/show_bug.cgi?id=2308
-#        is completed
-[Components.X64]
+[Components.$(DXE_ARCH)]
   #######################################
   # Edk2 Packages
   #######################################
+  !if $(TARGET) == DEBUG
+  MdeModulePkg/Universal/StatusCodeHandler/RuntimeDxe/StatusCodeHandlerRuntimeDxe.inf {
+    <LibraryClasses>
+      DebugLib|MdePkg/Library/BaseDebugLibNull/BaseDebugLibNull.inf
+      !if gKabylakeOpenBoardPkgTokenSpaceGuid.PcdI2cHdmiDebugPortEnable == TRUE
+        SerialPortLib|$(PLATFORM_BOARD_PACKAGE)/Library/I2cHdmiDebugSerialPortLib/DxeI2cHdmiDebugSerialPortLib.inf
+      !endif
+  }
+    MdeModulePkg/Universal/ReportStatusCodeRouter/Smm/ReportStatusCodeRouterSmm.inf {
+      <LibraryClasses>
+        DebugLib|MdePkg/Library/BaseDebugLibNull/BaseDebugLibNull.inf
+    }
+  MdeModulePkg/Universal/StatusCodeHandler/Smm/StatusCodeHandlerSmm.inf {
+      <LibraryClasses>
+        DebugLib|MdePkg/Library/BaseDebugLibNull/BaseDebugLibNull.inf
+        !if gKabylakeOpenBoardPkgTokenSpaceGuid.PcdI2cHdmiDebugPortEnable == TRUE
+          SerialPortLib|$(PLATFORM_BOARD_PACKAGE)/Library/I2cHdmiDebugSerialPortLib/SmmI2cHdmiDebugSerialPortLib.inf
+        !endif
+    }
+  !endif
   IntelFsp2WrapperPkg/FspWrapperNotifyDxe/FspWrapperNotifyDxe.inf
   MdeModulePkg/Bus/Ata/AtaAtapiPassThru/AtaAtapiPassThru.inf
   MdeModulePkg/Bus/Ata/AtaBusDxe/AtaBusDxe.inf
@@ -323,9 +392,12 @@
   MdeModulePkg/Bus/Pci/SataControllerDxe/SataControllerDxe.inf
   MdeModulePkg/Universal/Console/GraphicsOutputDxe/GraphicsOutputDxe.inf
   MdeModulePkg/Bus/Isa/Ps2KeyboardDxe/Ps2KeyboardDxe.inf
-  MdeModulePkg/Universal/BdsDxe/BdsDxe.inf{
+  MdeModulePkg/Universal/BdsDxe/BdsDxe.inf {
     <LibraryClasses>
       NULL|BoardModulePkg/Library/BdsPs2KbcLib/BdsPs2KbcLib.inf
+!if gMinPlatformPkgTokenSpaceGuid.PcdSerialTerminalEnable == TRUE
+      NULL|MinPlatformPkg/Library/SerialPortTerminalLib/SerialPortTerminalLib.inf
+!endif
   }
   UefiCpuPkg/CpuDxe/CpuDxe.inf
 
@@ -355,7 +427,17 @@
     <LibraryClasses>
       !if $(TARGET) == DEBUG
         DebugLib|MdePkg/Library/BaseDebugLibSerialPort/BaseDebugLibSerialPort.inf
+        !if gKabylakeOpenBoardPkgTokenSpaceGuid.PcdI2cHdmiDebugPortEnable == TRUE
+          SerialPortLib|$(PLATFORM_BOARD_PACKAGE)/Library/I2cHdmiDebugSerialPortLib/SmmI2cHdmiDebugSerialPortLib.inf
+        !endif
       !endif
+  }
+!endif
+!if gKabylakeOpenBoardPkgTokenSpaceGuid.PcdI2cHdmiDebugPortSerialTerminalEnable == TRUE
+  MdeModulePkg/Universal/SerialDxe/SerialDxe.inf {
+    <LibraryClasses>
+      DebugLib|MdePkg/Library/BaseDebugLibNull/BaseDebugLibNull.inf
+      SerialPortLib|$(PLATFORM_BOARD_PACKAGE)/Library/I2cHdmiDebugSerialPortLib/DxeI2cHdmiDebugSerialPortLib.inf
   }
 !endif
 
@@ -364,6 +446,10 @@
   #######################################
   IntelSiliconPkg/Feature/VTd/IntelVTdDxe/IntelVTdDxe.inf
   $(PLATFORM_SI_BIN_PACKAGE)/Microcode/MicrocodeUpdates.inf
+
+!if gMinPlatformPkgTokenSpaceGuid.PcdBootToShellOnly == FALSE
+  IntelSiliconPkg/Feature/Flash/SpiFvbService/SpiFvbServiceSmm.inf
+!endif
 
   #######################################
   # Platform Package
@@ -381,7 +467,6 @@
 
 !if gMinPlatformPkgTokenSpaceGuid.PcdBootToShellOnly == FALSE
 
-  $(PLATFORM_PACKAGE)/Flash/SpiFvbService/SpiFvbServiceSmm.inf
   $(PLATFORM_PACKAGE)/PlatformInit/PlatformInitSmm/PlatformInitSmm.inf
 
   $(PLATFORM_PACKAGE)/Acpi/AcpiSmm/AcpiSmm.inf {
@@ -401,6 +486,20 @@
         NULL|$(PROJECT)/Library/BoardAcpiLib/DxeMultiBoardAcpiSupportLib.inf
       !endif
   }
+
+!if gS3FeaturePkgTokenSpaceGuid.PcdS3FeatureEnable == TRUE
+  MdeModulePkg/Universal/Acpi/BootScriptExecutorDxe/BootScriptExecutorDxe.inf {
+    <LibraryClasses>
+      # On S3 resume, RSC is in end-of-BS state
+      # - Moreover: Libraries cannot effectively use some end-of-BS events
+      DebugLib|MdePkg/Library/BaseDebugLibSerialPort/BaseDebugLibSerialPort.inf
+      SerialPortLib|MdePkg/Library/BaseSerialPortLibNull/BaseSerialPortLibNull.inf
+      # Reverse-ranked priority list
+!if gKabylakeOpenBoardPkgTokenSpaceGuid.PcdI2cHdmiDebugPortEnable == TRUE
+      SerialPortLib|$(PLATFORM_BOARD_PACKAGE)/Library/I2cHdmiDebugSerialPortLib/BootScriptExecutorDxeI2cHdmiDebugSerialPortLib.inf
+!endif
+  }
+!endif
 
 !endif
 
@@ -425,3 +524,4 @@
   }
 !endif
   BoardModulePkg/LegacySioDxe/LegacySioDxe.inf
+  BoardModulePkg/BoardBdsHookDxe/BoardBdsHookDxe.inf

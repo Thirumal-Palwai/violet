@@ -23,9 +23,10 @@
   EmbeddedPkg/EmbeddedPkg.dec
   MdeModulePkg/MdeModulePkg.dec
   MdePkg/MdePkg.dec
-  Silicon/Marvell/Marvell.dec
+  Silicon/Marvell/MarvellSiliconPkg/MarvellSiliconPkg.dec
 
 [LibraryClasses]
+  ArmadaBoardDescLib
   ArmadaIcuLib
   ArmSmcLib
   ComPhyLib
@@ -39,6 +40,10 @@
 [Guids]
   gEdkiiPlatformHasAcpiGuid
   gEfiEventReadyToBootGuid
+
+[FixedPcd]
+  gMarvellSiliconTokenSpaceGuid.PcdProductManufacturer
+  gMarvellSiliconTokenSpaceGuid.PcdProductPlatformName
 
 [Protocols]
   gMarvellPlatformInitCompleteProtocolGuid    ## PRODUCES

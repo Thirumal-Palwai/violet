@@ -47,20 +47,21 @@ ValidateWrittenBlockCount (
     /*
      * Not on MMC.
      */
+    *TransferredBlocks = Count;
     return EFI_SUCCESS;
   }
 
   Status = MmcHost->SendCommand (MmcHost, MMC_CMD55,
                       MmcHostInstance->CardInfo.RCA << 16);
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a(%u): error: %r\n", __FUNCTION__, __LINE__, Status));
+    DEBUG ((DEBUG_ERROR, "%a(%u): error: %r\n", __func__, __LINE__, Status));
     return Status;
   }
 
   Status = MmcHost->SendCommand (MmcHost, MMC_ACMD22, 0);
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR, "%a(%u): error: %r\n",
-      __FUNCTION__, __LINE__, Status));
+      __func__, __LINE__, Status));
     return Status;
   }
 
@@ -74,7 +75,7 @@ ValidateWrittenBlockCount (
   Status = MmcHost->ReadBlockData (MmcHost, 0, sizeof (Data),
                       (VOID*)Data);
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a(%u): error: %r\n", __FUNCTION__, __LINE__, Status));
+    DEBUG ((DEBUG_ERROR, "%a(%u): error: %r\n", __func__, __LINE__, Status));
     return Status;
   }
 
@@ -87,7 +88,7 @@ ValidateWrittenBlockCount (
                   ((UINT32)Data[3] << 0);
   if (BlocksWritten != Count) {
     DEBUG ((DEBUG_ERROR, "%a(%u): expected %u != gotten %u\n",
-      __FUNCTION__, __LINE__, Count, BlocksWritten));
+      __func__, __LINE__, Count, BlocksWritten));
     if (BlocksWritten == 0) {
       return EFI_DEVICE_ERROR;
     }
@@ -117,7 +118,7 @@ WaitUntilTran (
     Status = MmcHost->SendCommand (MmcHost, MMC_CMD13,
                         MmcHostInstance->CardInfo.RCA << 16);
     if (EFI_ERROR (Status) && Status != EFI_TIMEOUT) {
-      DEBUG ((DEBUG_ERROR, "%a(%u) CMD13 failed: %r\n", __FUNCTION__, __LINE__, Status));
+      DEBUG ((DEBUG_ERROR, "%a(%u) CMD13 failed: %r\n", __func__, __LINE__, Status));
       break;
     }
 
@@ -133,7 +134,7 @@ WaitUntilTran (
   }
 
   if (0 == Timeout) {
-    DEBUG ((DEBUG_ERROR, "%a(%u) card is busy\n", __FUNCTION__, __LINE__));
+    DEBUG ((DEBUG_ERROR, "%a(%u) card is busy\n", __func__, __LINE__));
     return EFI_NOT_READY;
   }
 

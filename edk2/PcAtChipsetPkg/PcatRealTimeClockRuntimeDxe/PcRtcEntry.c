@@ -2,15 +2,22 @@
   Provides Set/Get time operations.
 
 Copyright (c) 2006 - 2018, Intel Corporation. All rights reserved.<BR>
+Copyright (c) 2018 - 2020, ARM Limited. All rights reserved.<BR>
 SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
 
+#include <Library/DxeServicesTableLib.h>
 #include "PcRtc.h"
 
 PC_RTC_MODULE_GLOBALS  mModuleGlobal;
 
-EFI_HANDLE             mHandle = NULL;
+EFI_HANDLE  mHandle = NULL;
+
+STATIC EFI_EVENT  mVirtualAddrChangeEvent;
+
+UINTN  mRtcIndexRegister;
+UINTN  mRtcTargetRegister;
 
 /**
   Returns the current time and date information, and the time-keeping capabilities
@@ -28,8 +35,8 @@ EFI_HANDLE             mHandle = NULL;
 EFI_STATUS
 EFIAPI
 PcRtcEfiGetTime (
-  OUT EFI_TIME                *Time,
-  OUT EFI_TIME_CAPABILITIES   *Capabilities  OPTIONAL
+  OUT EFI_TIME               *Time,
+  OUT EFI_TIME_CAPABILITIES  *Capabilities  OPTIONAL
   )
 {
   return PcRtcGetTime (Time, Capabilities, &mModuleGlobal);
@@ -48,7 +55,7 @@ PcRtcEfiGetTime (
 EFI_STATUS
 EFIAPI
 PcRtcEfiSetTime (
-  IN EFI_TIME                *Time
+  IN EFI_TIME  *Time
   )
 {
   return PcRtcSetTime (Time, &mModuleGlobal);
@@ -72,14 +79,13 @@ PcRtcEfiSetTime (
 EFI_STATUS
 EFIAPI
 PcRtcEfiGetWakeupTime (
-  OUT BOOLEAN     *Enabled,
-  OUT BOOLEAN     *Pending,
-  OUT EFI_TIME    *Time
+  OUT BOOLEAN   *Enabled,
+  OUT BOOLEAN   *Pending,
+  OUT EFI_TIME  *Time
   )
 {
   return PcRtcGetWakeupTime (Enabled, Pending, Time, &mModuleGlobal);
 }
-
 
 /**
   Sets the system wakeup alarm clock time.
@@ -98,11 +104,35 @@ PcRtcEfiGetWakeupTime (
 EFI_STATUS
 EFIAPI
 PcRtcEfiSetWakeupTime (
-  IN BOOLEAN      Enabled,
-  IN EFI_TIME    *Time       OPTIONAL
+  IN BOOLEAN   Enabled,
+  IN EFI_TIME  *Time       OPTIONAL
   )
 {
   return PcRtcSetWakeupTime (Enabled, Time, &mModuleGlobal);
+}
+
+/**
+  Fixup internal data so that EFI can be called in virtual mode.
+  Call the passed in Child Notify event and convert any pointers in
+  lib to virtual mode.
+
+  @param[in]    Event   The Event that is being processed
+  @param[in]    Context Event Context
+**/
+VOID
+EFIAPI
+LibRtcVirtualNotifyEvent (
+  IN EFI_EVENT  Event,
+  IN VOID       *Context
+  )
+{
+  // Only needed if you are going to support the OS calling RTC functions in
+  // virtual mode. You will need to call EfiConvertPointer (). To convert any
+  // stored physical addresses to virtual address. After the OS transitions to
+  // calling in virtual mode, all future runtime calls will be made in virtual
+  // mode.
+  EfiConvertPointer (0x0, (VOID **)&mRtcIndexRegister);
+  EfiConvertPointer (0x0, (VOID **)&mRtcTargetRegister);
 }
 
 /**
@@ -121,8 +151,8 @@ PcRtcEfiSetWakeupTime (
 EFI_STATUS
 EFIAPI
 InitializePcRtc (
-  IN EFI_HANDLE                            ImageHandle,
-  IN EFI_SYSTEM_TABLE                      *SystemTable
+  IN EFI_HANDLE        ImageHandle,
+  IN EFI_SYSTEM_TABLE  *SystemTable
   )
 {
   EFI_STATUS  Status;
@@ -130,6 +160,11 @@ InitializePcRtc (
 
   EfiInitializeLock (&mModuleGlobal.RtcLock, TPL_CALLBACK);
   mModuleGlobal.CenturyRtcAddress = GetCenturyRtcAddress ();
+
+  if (FeaturePcdGet (PcdRtcUseMmio)) {
+    mRtcIndexRegister  = (UINTN)PcdGet64 (PcdRtcIndexRegister64);
+    mRtcTargetRegister = (UINTN)PcdGet64 (PcdRtcTargetRegister64);
+  }
 
   Status = PcRtcInit (&mModuleGlobal);
   ASSERT_EFI_ERROR (Status);
@@ -165,7 +200,23 @@ InitializePcRtc (
                   NULL,
                   NULL
                   );
-  ASSERT_EFI_ERROR (Status);
+  if (EFI_ERROR (Status)) {
+    ASSERT_EFI_ERROR (Status);
+    return Status;
+  }
+
+  if (FeaturePcdGet (PcdRtcUseMmio)) {
+    // Register for the virtual address change event
+    Status = gBS->CreateEventEx (
+                    EVT_NOTIFY_SIGNAL,
+                    TPL_NOTIFY,
+                    LibRtcVirtualNotifyEvent,
+                    NULL,
+                    &gEfiEventVirtualAddressChangeGuid,
+                    &mVirtualAddrChangeEvent
+                    );
+    ASSERT_EFI_ERROR (Status);
+  }
 
   return Status;
 }

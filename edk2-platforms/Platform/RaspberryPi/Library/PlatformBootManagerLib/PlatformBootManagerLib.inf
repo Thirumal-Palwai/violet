@@ -46,12 +46,10 @@
   MemoryAllocationLib
   PcdLib
   PrintLib
+  TimerLib
   UefiBootManagerLib
   UefiBootServicesTableLib
   UefiLib
-
-[FeaturePcd]
-  gEfiMdePkgTokenSpaceGuid.PcdUgaConsumeSupport
 
 [FixedPcd]
   gEfiMdePkgTokenSpaceGuid.PcdUartDefaultBaudRate
@@ -61,11 +59,13 @@
   gEfiMdePkgTokenSpaceGuid.PcdDefaultTerminalType
 
 [Pcd]
+  gEfiMdeModulePkgTokenSpaceGuid.PcdBootDiscoveryPolicy
   gEfiMdePkgTokenSpaceGuid.PcdPlatformBootTimeOut
-  gRaspberryPiTokenSpaceGuid.PcdDebugShowUEFIExit
+  gRaspberryPiTokenSpaceGuid.PcdPlatformResetDelay
   gRaspberryPiTokenSpaceGuid.PcdSdIsArasan
 
 [Guids]
+  gBootDiscoveryPolicyMgrFormsetGuid
   gEfiFileInfoGuid
   gEfiFileSystemInfoGuid
   gEfiFileSystemVolumeLabelInfoIdGuid
@@ -73,11 +73,19 @@
   gEfiTtyTermGuid
   gUefiShellFileGuid
   gEfiEventExitBootServicesGuid
+  gEfiBootManagerPolicyNetworkGuid
+  gEfiBootManagerPolicyConnectAllGuid
 
 [Protocols]
+  gEdkiiPlatformSpecificResetHandlerProtocolGuid
+  gEfiBootManagerPolicyProtocolGuid
   gEfiDevicePathProtocolGuid
   gEfiGraphicsOutputProtocolGuid
   gEfiLoadedImageProtocolGuid
+  gEfiPciRootBridgeIoProtocolGuid
   gEfiSimpleFileSystemProtocolGuid
   gEsrtManagementProtocolGuid
   gEfiUsb2HcProtocolGuid
+
+[Depex]
+  gEdkiiPlatformSpecificResetHandlerProtocolGuid

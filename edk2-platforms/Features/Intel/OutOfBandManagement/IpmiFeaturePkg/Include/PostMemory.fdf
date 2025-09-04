@@ -7,10 +7,17 @@
 #
 ##
 
-  INF OutOfBandManagement/IpmiFeaturePkg/BmcAcpi/BmcAcpi.inf
-  INF OutOfBandManagement/IpmiFeaturePkg/BmcElog/BmcElog.inf
-  INF OutOfBandManagement/IpmiFeaturePkg/Frb/FrbDxe.inf
-  INF OutOfBandManagement/IpmiFeaturePkg/IpmiFru/IpmiFru.inf
-  INF OutOfBandManagement/IpmiFeaturePkg/IpmiInit/DxeIpmiInit.inf
-  INF OutOfBandManagement/IpmiFeaturePkg/OsWdt/OsWdt.inf
-  INF OutOfBandManagement/IpmiFeaturePkg/SolStatus/SolStatus.inf
+INF IpmiFeaturePkg/GenericIpmi/Dxe/GenericIpmi.inf
+INF IpmiFeaturePkg/IpmiInit/DxeIpmiInit.inf
+INF RuleOverride = DRIVER_ACPITABLE IpmiFeaturePkg/BmcAcpi/BmcAcpi.inf
+INF IpmiFeaturePkg/BmcAcpiState/BmcAcpiState.inf
+INF IpmiFeaturePkg/BmcAcpiSwChild/BmcAcpiSwChild.inf
+INF IpmiFeaturePkg/BmcElog/DxeBmcElog.inf
+INF IpmiFeaturePkg/BmcElog/SmmBmcElog.inf
+INF IpmiFeaturePkg/Frb/FrbDxe.inf
+INF IpmiFeaturePkg/IpmiRedirFru/IpmiRedirFru.inf
+INF IpmiFeaturePkg/GenericElog/Dxe/GenericElog.inf
+INF IpmiFeaturePkg/GenericElog/Smm/GenericElog.inf
+INF IpmiFeaturePkg/GenericFru/GenericFru.inf
+INF IpmiFeaturePkg/OsWdt/OsWdt.inf
+INF IpmiFeaturePkg/SolStatus/SolStatus.inf

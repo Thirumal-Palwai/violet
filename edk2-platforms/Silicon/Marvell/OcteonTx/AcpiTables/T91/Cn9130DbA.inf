@@ -18,6 +18,7 @@
   VERSION_STRING                 = 1.0
 
 [Sources]
+  Cn913xDbA/Dbg2.aslc
   Cn913xDbA/Dsdt.asl
   Cn913xDbA/Mcfg.aslc
   Fadt.aslc
@@ -32,7 +33,7 @@
   EmbeddedPkg/EmbeddedPkg.dec
   MdeModulePkg/MdeModulePkg.dec
   MdePkg/MdePkg.dec
-  Silicon/Marvell/Marvell.dec
+  Silicon/Marvell/MarvellSiliconPkg/MarvellSiliconPkg.dec
 
 [FixedPcd]
   gArmPlatformTokenSpaceGuid.PcdCoreCount

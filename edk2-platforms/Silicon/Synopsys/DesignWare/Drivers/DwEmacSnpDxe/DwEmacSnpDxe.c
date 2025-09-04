@@ -5,7 +5,7 @@
 
   The original software modules are licensed as follows:
 
-  Copyright (c) 2012 - 2014, ARM Limited. All rights reserved.
+  Copyright (c) 2012 - 2020, Arm Limited. All rights reserved.<BR>
   Copyright (c) 2004 - 2010, Intel Corporation. All rights reserved.
 
   SPDX-License-Identifier: BSD-2-Clause-Patent
@@ -45,7 +45,7 @@ SnpStart (
 {
   SIMPLE_NETWORK_DRIVER    *Snp;
 
-  DEBUG ((DEBUG_INFO,"SNP:DXE: %a ()\r\n", __FUNCTION__));
+  DEBUG ((DEBUG_INFO,"SNP:DXE: %a ()\r\n", __func__));
 
   // Check Snp instance
   if (This == NULL) {
@@ -94,7 +94,7 @@ SnpStop (
 {
   SIMPLE_NETWORK_DRIVER    *Snp;
 
-  DEBUG ((DEBUG_INFO, "SNP:DXE: %a ()\r\n", __FUNCTION__));
+  DEBUG ((DEBUG_INFO, "SNP:DXE: %a ()\r\n", __func__));
 
   // Check Snp Instance
   if (This == NULL) {
@@ -168,7 +168,7 @@ SnpInitialize (
   EFI_STATUS                  Status;
   SIMPLE_NETWORK_DRIVER       *Snp;
 
-  DEBUG ((DEBUG_INFO, "SNP:DXE: %a ()\r\n", __FUNCTION__));
+  DEBUG ((DEBUG_INFO, "SNP:DXE: %a ()\r\n", __func__));
 
   // Check Snp Instance
   if (This == NULL) {
@@ -252,7 +252,7 @@ SnpReset (
 
   Snp = INSTANCE_FROM_SNP_THIS (This);
 
-  DEBUG ((DEBUG_INFO, "SNP:DXE: %a ()\r\n", __FUNCTION__));
+  DEBUG ((DEBUG_INFO, "SNP:DXE: %a ()\r\n", __func__));
 
   // Check Snp Instance
   if (This == NULL) {
@@ -304,7 +304,7 @@ SnpShutdown (
 {
   SIMPLE_NETWORK_DRIVER     *Snp;
 
-  DEBUG ((DEBUG_INFO, "SNP:DXE: %a ()\r\n", __FUNCTION__));
+  DEBUG ((DEBUG_INFO, "SNP:DXE: %a ()\r\n", __func__));
 
   // Check Snp Instance
   if (This == NULL) {
@@ -571,7 +571,7 @@ SnpStatistics (
 
   Snp = INSTANCE_FROM_SNP_THIS (This);
 
-  DEBUG ((DEBUG_INFO, "SNP:DXE: %a ()\r\n", __FUNCTION__));
+  DEBUG ((DEBUG_INFO, "SNP:DXE: %a ()\r\n", __func__));
 
   // Check Snp instance
   if (This == NULL) {
@@ -648,7 +648,7 @@ SnpMcastIptoMac (
   )
 {
 
-  DEBUG ((DEBUG_INFO, "SNP:DXE: %a ()\r\n", __FUNCTION__));
+  DEBUG ((DEBUG_INFO, "SNP:DXE: %a ()\r\n", __func__));
 
   // Check Snp instance
   if (This == NULL) {
@@ -997,7 +997,7 @@ SnpTransmit (
   Status = DmaMap (MapOperationBusMasterRead, (VOID *)(UINTN)TxDescriptor->Addr,
              &BufferSizeBuf, &TxBufferAddrMap, &Snp->MappingTxbuf);
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a () for Txbuffer: %r\n", __FUNCTION__, Status));
+    DEBUG ((DEBUG_ERROR, "%a () for Txbuffer: %r\n", __func__, Status));
     return Status;
   }
   TxDescriptorMap->Addr = TxBufferAddrMap;
@@ -1135,7 +1135,8 @@ SnpReceive (
   Snp->MacDriver.RxCurrentDescriptorNum = Snp->MacDriver.RxNextDescriptorNum;
   DescNum = Snp->MacDriver.RxCurrentDescriptorNum;
   RxDescriptor = Snp->MacDriver.RxdescRing[DescNum];
-  RxBufferAddr = (VOID *)Snp->MacDriver.RxBuffer + (DescNum * BufferSizeBuf);
+  RxBufferAddr = (UINTN*)((UINTN)Snp->MacDriver.RxBuffer +
+                          (DescNum * BufferSizeBuf));
   RxDescriptorMap = (VOID *)(UINTN)Snp->MacDriver.RxdescRingMap[DescNum].AddrMap;
 
   RawData = (UINT8 *) Data;
@@ -1241,7 +1242,7 @@ SnpReceive (
   Status = DmaMap (MapOperationBusMasterWrite,  (VOID *)RxBufferAddr,
              &BufferSizeBuf, &RxBufferAddrMap, &Snp->MacDriver.RxBufNum[DescNum].Mapping);
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a () for Rxbuffer: %r\n", __FUNCTION__, Status));
+    DEBUG ((DEBUG_ERROR, "%a () for Rxbuffer: %r\n", __func__, Status));
     return Status;
   }
   Snp->MacDriver.RxBufNum[DescNum].AddrMap = RxBufferAddrMap;

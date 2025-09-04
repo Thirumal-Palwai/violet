@@ -391,7 +391,7 @@ test_import_export_context(gss_ctx_id_t *context)
     if (verbose && logfile)
         fprintf(logfile, "Importing context: %7.4f seconds\n",
                 timeval_subtract(&tm1, &tm2));
-    free(context_token.value);
+    (void) gss_release_buffer(&min_stat, &context_token);
     return 0;
 }
 
@@ -781,6 +781,7 @@ main(int argc, char **argv)
                 /* Accept a TCP connection */
                 if ((work->s = accept(stmp, NULL, 0)) < 0) {
                     perror("accepting connection");
+                    free(work);
                     continue;
                 }
 

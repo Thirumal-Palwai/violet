@@ -55,6 +55,12 @@ name types are supported by the krb5 mechanism:
 * **GSS_C_NT_EXPORT_NAME**: The value must be the result of a
   gss_export_name_ call.
 
+* **GSS_KRB5_NT_ENTERPRISE_NAME**: The value should be a krb5
+  enterprise name string (see :rfc:`6806` section 5), in the form
+  ``user@suffix``.  This name type is used to convey alias names, and
+  is defined in the ``<gssapi/gssapi_krb5.h>`` header.  (New in
+  release 1.17.)
+
 
 Initiator credentials
 ---------------------
@@ -311,6 +317,25 @@ intermediate service has the appropriate permissions, the KDC will
 issue a ticket from the client to the target service.  The GSSAPI
 library will then use this ticket to authenticate to the target
 service.
+
+If an application needs to find out whether a credential it holds is a
+proxy credential and the name of the intermediate service, it can
+query the credential with the **GSS_KRB5_GET_CRED_IMPERSONATOR** OID
+(new in release 1.16, declared in ``<gssapi/gssapi_krb5.h>``) using
+the gss_inquire_cred_by_oid extension (declared in
+``<gssapi/gssapi_ext.h>``)::
+
+    OM_uint32 gss_inquire_cred_by_oid(OM_uint32 *minor_status,
+                                      const gss_cred_id_t cred_handle,
+                                      gss_OID desired_object,
+                                      gss_buffer_set_t *data_set);
+
+If the call succeeds and *cred_handle* is a proxy credential,
+*data_set* will be set to a single-element buffer set containing the
+unparsed principal name of the intermediate service.  If *cred_handle*
+is not a proxy credential, *data_set* will be set to an empty buffer
+set.  If the library does not support the query,
+gss_inquire_cred_by_oid will return **GSS_S_UNAVAILABLE**.
 
 
 AEAD message wrapping
@@ -594,25 +619,23 @@ gss_get_mic_iov_length and gss_get_mic_iov::
     iov[1].buffer.value = "message";
     iov[1].buffer.length = 7;
 
-    major = gss_wrap_iov_length(&minor, ctx, 1, GSS_C_QOP_DEFAULT,
-                                NULL, iov, 2);
+    major = gss_get_mic_iov_length(&minor, ctx, GSS_C_QOP_DEFAULT, iov, 2);
     if (GSS_ERROR(major))
         handle_error(major, minor);
     if (iov[0].buffer.length > sizeof(data))
         handle_out_of_space_error();
     iov[0].buffer.value = data;
 
-    major = gss_wrap_iov(&minor, ctx, 1, GSS_C_QOP_DEFAULT, NULL,
-                         iov, 2);
+    major = gss_get_mic_iov(&minor, ctx, GSS_C_QOP_DEFAULT, iov, 2);
     if (GSS_ERROR(major))
         handle_error(major, minor);
 
 
-.. _gss_accept_sec_context: http://tools.ietf.org/html/rfc2744.html#section-5.1
-.. _gss_acquire_cred: http://tools.ietf.org/html/rfc2744.html#section-5.2
-.. _gss_export_name: http://tools.ietf.org/html/rfc2744.html#section-5.13
-.. _gss_get_name_attribute: http://tools.ietf.org/html/6680.html#section-7.5
-.. _gss_import_name: http://tools.ietf.org/html/rfc2744.html#section-5.16
-.. _gss_init_sec_context: http://tools.ietf.org/html/rfc2744.html#section-5.19
-.. _gss_inquire_name: http://tools.ietf.org/html/rfc6680.txt#section-7.4
-.. _gss_inquire_cred: http://tools.ietf.org/html/rfc2744.html#section-5.21
+.. _gss_accept_sec_context: https://tools.ietf.org/html/rfc2744.html#section-5.1
+.. _gss_acquire_cred: https://tools.ietf.org/html/rfc2744.html#section-5.2
+.. _gss_export_name: https://tools.ietf.org/html/rfc2744.html#section-5.13
+.. _gss_get_name_attribute: https://tools.ietf.org/html/6680.html#section-7.5
+.. _gss_import_name: https://tools.ietf.org/html/rfc2744.html#section-5.16
+.. _gss_init_sec_context: https://tools.ietf.org/html/rfc2744.html#section-5.19
+.. _gss_inquire_name: https://tools.ietf.org/html/rfc6680.txt#section-7.4
+.. _gss_inquire_cred: https://tools.ietf.org/html/rfc2744.html#section-5.21

@@ -151,6 +151,7 @@ static krb5_error_code
 init_tls_vtable(krb5_context context)
 {
     krb5_plugin_initvt_fn initfn;
+    krb5_error_code ret;
 
     if (context->tls != NULL)
         return 0;
@@ -161,8 +162,11 @@ init_tls_vtable(krb5_context context)
 
     /* Attempt to load the module; just let it stay nulled out on failure. */
     k5_plugin_register_dyn(context, PLUGIN_INTERFACE_TLS, "k5tls", "tls");
-    if (k5_plugin_load(context, PLUGIN_INTERFACE_TLS, "k5tls", &initfn) == 0)
+    ret = k5_plugin_load(context, PLUGIN_INTERFACE_TLS, "k5tls", &initfn);
+    if (!ret)
         (*initfn)(context, 0, 0, (krb5_plugin_vtable)context->tls);
+    else
+        TRACE_SENDTO_KDC_K5TLS_LOAD_ERROR(context, ret);
 
     return 0;
 }
@@ -253,7 +257,7 @@ cm_get_ssflags(struct select_state *selstate, int fd)
     struct pollfd *pfd = find_pollfd(selstate, fd);
 
     /*
-     * OS X sets POLLHUP without POLLOUT on connection error.  Catch this as
+     * macOS sets POLLHUP without POLLOUT on connection error.  Catch this as
      * well as other error events such as POLLNVAL, but only if POLLIN and
      * POLLOUT aren't set, as we can get POLLHUP along with POLLIN with TCP
      * data still to be read.
@@ -880,7 +884,8 @@ start_connection(krb5_context context, struct conn_state *state,
     }
 
     /* Start connecting to KDC.  */
-    e = connect(fd, (struct sockaddr *)&state->addr.saddr, state->addr.len);
+    e = SOCKET_CONNECT(fd, (struct sockaddr *)&state->addr.saddr,
+                       state->addr.len);
     if (e != 0) {
         /*
          * This is the path that should be followed for non-blocking
@@ -1372,8 +1377,7 @@ get_endtime(time_ms endtime, struct conn_state *conns)
     struct conn_state *state;
 
     for (state = conns; state != NULL; state = state->next) {
-        if (state->addr.transport == TCP &&
-            (state->state == READING || state->state == WRITING) &&
+        if ((state->state == READING || state->state == WRITING) &&
             state->endtime > endtime)
             endtime = state->endtime;
     }

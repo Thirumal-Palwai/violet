@@ -33,6 +33,7 @@
   MdeModulePkg/MdeModulePkg.dec
   MdePkg/MdePkg.dec
   OvmfPkg/OvmfPkg.dec
+  SecurityPkg/SecurityPkg.dec
   ShellPkg/ShellPkg.dec
 
 [LibraryClasses]
@@ -44,10 +45,10 @@
   MemoryAllocationLib
   PcdLib
   PlatformBmPrintScLib
-  PrintLib
   QemuBootOrderLib
-  QemuFwCfgLib
+  QemuLoadImageLib
   ReportStatusCodeLib
+  TpmPlatformHierarchyLib
   UefiBootManagerLib
   UefiBootServicesTableLib
   UefiLib
@@ -64,18 +65,13 @@
   gEfiMdePkgTokenSpaceGuid.PcdPlatformBootTimeOut
 
 [Guids]
-  gEfiFileInfoGuid
-  gEfiFileSystemInfoGuid
-  gEfiFileSystemVolumeLabelInfoIdGuid
   gEfiEndOfDxeEventGroupGuid
+  gEfiGlobalVariableGuid
   gRootBridgesConnectedEventGroupGuid
   gUefiShellFileGuid
 
 [Protocols]
-  gEfiDevicePathProtocolGuid
   gEfiFirmwareVolume2ProtocolGuid
   gEfiGraphicsOutputProtocolGuid
-  gEfiLoadedImageProtocolGuid
   gEfiPciRootBridgeIoProtocolGuid
-  gEfiSimpleFileSystemProtocolGuid
   gVirtioDeviceProtocolGuid

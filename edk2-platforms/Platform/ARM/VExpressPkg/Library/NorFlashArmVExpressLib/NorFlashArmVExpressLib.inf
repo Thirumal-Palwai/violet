@@ -1,6 +1,6 @@
 #/** @file
 #
-#  Copyright (c) 2011, ARM Ltd. All rights reserved.<BR>
+#  Copyright (c) 2011-2024, ARM Ltd. All rights reserved.<BR>
 #  SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 #**/
@@ -15,10 +15,11 @@
 
 [Sources.common]
   NorFlashArmVExpress.c
+  NorFlashInfo.c
 
 [Packages]
   MdePkg/MdePkg.dec
-  ArmPlatformPkg/ArmPlatformPkg.dec
+  Platform/ARM/ARM.dec
   Platform/ARM/VExpressPkg/ArmVExpressPkg.dec
 
 [LibraryClasses]

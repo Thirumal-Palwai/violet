@@ -28,7 +28,7 @@ WaitForBusBusy (
 {
   UINTN Retry = 0;
 
-  while (++Retry < MAX_RETRY && (MmioRead16(I2C_STAT) & BB) == 0x1);
+  while (++Retry < MAX_RETRY && (MmioRead16(I2C_STAT) & BB));
 
   if (Retry == MAX_RETRY) {
     return EFI_TIMEOUT;
@@ -306,7 +306,7 @@ InitializeSmbus (
   //Configure I2C controller.
   Status = ConfigureI2c();
   if (EFI_ERROR(Status)) {
-    DEBUG ((EFI_D_ERROR, "InitializeI2c fails.\n"));
+    DEBUG ((DEBUG_ERROR, "InitializeI2c fails.\n"));
     return Status;
   }
 

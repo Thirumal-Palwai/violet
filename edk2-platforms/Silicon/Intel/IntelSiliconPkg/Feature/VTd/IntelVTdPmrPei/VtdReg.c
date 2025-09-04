@@ -13,8 +13,10 @@
 #include <Library/DebugLib.h>
 #include <Library/MemoryAllocationLib.h>
 #include <Library/CacheMaintenanceLib.h>
+#include <Library/PeiServicesLib.h>
 #include <IndustryStandard/Vtd.h>
 #include <Ppi/VtdInfo.h>
+#include <Ppi/VtdNullRootEntryTable.h>
 
 #include "IntelVTdPmrPei.h"
 
@@ -52,6 +54,7 @@ FlushWriteBuffer (
 
   if (CapReg.Bits.RWBF != 0) {
     Reg32 = MmioRead32 (VtdUnitBaseAddress + R_GSTS_REG);
+    Reg32 = (Reg32 & 0x96FFFFFF);       // Reset the one-shot bits
     MmioWrite32 (VtdUnitBaseAddress + R_GCMD_REG, Reg32 | B_GMCD_REG_WBF);
     do {
       Reg32 = MmioRead32 (VtdUnitBaseAddress + R_GSTS_REG);
@@ -242,6 +245,51 @@ DisableDmar (
   MmioWrite64 (VtdUnitBaseAddress + R_RTADDR_REG, 0);
 
   DEBUG ((DEBUG_INFO,"VTD () Disabled!<<<<<<\n"));
+
+  return EFI_SUCCESS;
+}
+
+/**
+  Enable VTd translation table protection in pre-memory phase.
+
+  @param VTdInfo            The VTd engine context information.
+  @param EngineMask         The mask of the VTd engine to be accessed.
+
+  @retval EFI_SUCCESS       DMAR translation protection is enabled.
+  @retval EFI_UNSUPPORTED   Null Root Entry Table is not supported.
+**/
+EFI_STATUS
+PreMemoryEnableVTdTranslationProtection (
+  IN VTD_INFO      *VTdInfo,
+  IN UINT64        EngineMask
+  )
+{
+  EFI_STATUS                            Status;
+  UINTN                                 Index;
+  EDKII_VTD_NULL_ROOT_ENTRY_TABLE_PPI   *RootEntryTable;
+
+  DEBUG ((DEBUG_INFO, "PreMemoryEnableVTdTranslationProtection - 0x%lx\n", EngineMask));
+
+  Status = PeiServicesLocatePpi (
+                 &gEdkiiVTdNullRootEntryTableGuid,
+                 0,
+                 NULL,
+                 (VOID **)&RootEntryTable
+                 );
+
+  if (EFI_ERROR(Status)) {
+    DEBUG((DEBUG_ERROR, "Locate NullRootEntryTable Ppi : %r\n", Status));
+    return EFI_UNSUPPORTED;
+  }
+
+  DEBUG ((DEBUG_INFO, "NullRootEntryTable - 0x%lx\n", *RootEntryTable));
+
+  for (Index = 0; Index < VTdInfo->VTdEngineCount; Index++) {
+    if ((EngineMask & LShiftU64(1, Index)) == 0) {
+      continue;
+    }
+    EnableDmar ((UINTN)VTdInfo->VTdEngineAddress[Index], (UINTN)*RootEntryTable);
+  }
 
   return EFI_SUCCESS;
 }

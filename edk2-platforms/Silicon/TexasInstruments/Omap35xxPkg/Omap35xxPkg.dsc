@@ -23,6 +23,8 @@
   BUILD_TARGETS                  = DEBUG|RELEASE|NOOPT
   SKUID_IDENTIFIER               = DEFAULT
 
+!include MdePkg/MdeLibs.dsc.inc
+
 [LibraryClasses.common]
   DebugLib|MdePkg/Library/BaseDebugLibNull/BaseDebugLibNull.inf
 
@@ -71,21 +73,7 @@
   DxeServicesLib|MdePkg/Library/DxeServicesLib/DxeServicesLib.inf
   NonDiscoverableDeviceRegistrationLib|MdeModulePkg/Library/NonDiscoverableDeviceRegistrationLib/NonDiscoverableDeviceRegistrationLib.inf
 
-[LibraryClasses.ARM]
-  NULL|ArmPkg/Library/CompilerIntrinsicsLib/CompilerIntrinsicsLib.inf
-  NULL|MdePkg/Library/BaseStackCheckLib/BaseStackCheckLib.inf
-
 [BuildOptions]
-  XCODE:*_*_ARM_ARCHCC_FLAGS     == -arch armv7 -march=armv7
-  XCODE:*_*_ARM_ARCHASM_FLAGS    == -arch armv7
-  XCODE:*_*_ARM_ARCHDLINK_FLAGS  == -arch armv7
-
-  GCC:*_*_ARM_ARCHCC_FLAGS     == -march=armv7-a -mthumb
-  GCC:*_*_ARM_ARCHASM_FLAGS    == -march=armv7-a
-
-  RVCT:*_*_ARM_ARCHCC_FLAGS     == --cpu 7-A
-  RVCT:*_*_ARM_ARCHASM_FLAGS    == --cpu 7-A
-
   *_*_*_CC_FLAGS = -DDISABLE_NEW_DEPRECATED_INTERFACES
 
 ################################################################################
@@ -133,7 +121,6 @@
   gEmbeddedTokenSpaceGuid.PcdFlashFvMainSize|0
   gEmbeddedTokenSpaceGuid.PcdPrePiStackBase|0x87FE0000 # stack at top of memory
   gEmbeddedTokenSpaceGuid.PcdPrePiStackSize|0x20000  # 128K stack
-  gArmTokenSpaceGuid.PcdCpuVectorBaseAddress|0x80000000
   gArmTokenSpaceGuid.PcdCpuResetAddress|0x80008000
 
   gOmap35xxTokenSpaceGuid.PcdOmap35xxGpmcOffset|0x6E000000

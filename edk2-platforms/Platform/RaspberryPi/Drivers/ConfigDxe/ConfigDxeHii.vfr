@@ -1,6 +1,7 @@
 /** @file
  *
  *  Copyright (c) 2018 Andrei Warkentin <andrey.warkentin@gmail.com>
+ *  Copyright (c) 2020, ARM Limited. All rights reserved.
  *
  *  SPDX-License-Identifier: BSD-2-Clause-Patent
  *
@@ -8,128 +9,8 @@
 
 #include <Guid/HiiPlatformSetupFormset.h>
 #include "ConfigDxeFormSetGuid.h"
-
-#pragma pack(1)
-typedef struct {
-  /*
-   * One bit for each scaled resolution supported,
-   * these are ordered exactly like mGopModeData
-   * in DisplayDxe.
-   *
-   * 800x600, 640x480, 1024x768, 720p, 1080p, native.
-   */
-   UINT8 v640   : 1;
-   UINT8 v800   : 1;
-   UINT8 v1024  : 1;
-   UINT8 v720p  : 1;
-   UINT8 v1080p : 1;
-   UINT8 Physical : 1;
-} DISPLAY_ENABLE_SCALED_VMODES_VARSTORE_DATA;
-#pragma pack()
-
-typedef struct {
-  /*
-   * 0 - No screenshot support.
-   * 1 - Screenshot support via hotkey.
-   */
-   UINT32 Enable;
-} DISPLAY_ENABLE_SSHOT_VARSTORE_DATA;
-
-typedef struct {
-  /*
-   * 0 - No JTAG.
-   * 1 - JTAG mode.
-   */
-   UINT32 Enable;
-} DEBUG_ENABLE_JTAG_VARSTORE_DATA;
-
-typedef struct {
-  /*
-   * 0 - Don't show UEFI exit message.
-   * 1 - Show UEFI exit message.
-   */
-   UINT32 Show;
-} DEBUG_SHOW_UEFI_EXIT_VARSTORE_DATA;
-
-typedef struct {
-  /*
-   * 0 - low.
-   * 1 - default.
-   * 2 - maximum.
-   * 3 - custom.
-   */
-  UINT32 Clock;
-} CHIPSET_CPU_CLOCK_VARSTORE_DATA;
-
-typedef struct {
-  UINT32 Clock;
-} CHIPSET_CUSTOM_CPU_CLOCK_VARSTORE_DATA;
-
-typedef struct {
-  /*
-   * Always set by ConfigDxe prior to HII init to reflect
-   * platform capability.
-   */
-  UINT32 Supported;
-} ADVANCED_RAM_MORE_THAN_3GB_VARSTORE_DATA;
-
-typedef struct {
-  UINT32 Enabled;
-} ADVANCED_RAM_LIMIT_TO_3GB_VARSTORE_DATA;
-
-typedef struct {
-  /*
-   * 0 - Do not provide a Device Tree to the OS
-   * 1 - Provide a Device Tree to the OS
-   */
-  UINT32 Enabled;
-} ADVANCED_DEVICE_TREE_VARSTORE_DATA;
-
-typedef struct {
-  /*
-   * 0 - uSD slot routed to Broadcom SDHOST on Pi 3 or eMMC2 on Pi 4.
-   * 1 - uSD slot routed to Arasan SDHCI.
-   */
-  UINT32 Routing;
-} MMC_SD_VARSTORE_DATA;
-
-typedef struct {
-  /*
-   * 0 - Don't disable multi-block.
-   * 1 - Disable multi-block commands.
-   */
-  UINT32 DisableMulti;
-} MMC_DISMULTI_VARSTORE_DATA;
-
-typedef struct {
-  /*
-   * 0 - Don't force 1 bit mode.
-   * 1 - Force 1 bit mode.
-   */
-  UINT32 Force1Bit;
-} MMC_FORCE1BIT_VARSTORE_DATA;
-
-typedef struct {
-  /*
-   * 0 - Don't force default speed.
-   * 1 - Force default speed.
-   */
-  UINT32 ForceDS;
-} MMC_FORCEDS_VARSTORE_DATA;
-
-typedef struct {
-  /*
-   * Default Speed MHz override (25MHz default).
-   */
-  UINT32 MHz;
-} MMC_SD_DS_MHZ_VARSTORE_DATA;
-
-typedef struct {
-  /*
-   * High Speed MHz override (50MHz default).
-   */
-  UINT32 MHz;
-} MMC_SD_HS_MHZ_VARSTORE_DATA;
+#include <ConfigVars.h>
+#include <IndustryStandard/Bcm2711.h>
 
 //
 // EFI Variable attributes
@@ -165,9 +46,34 @@ formset
       name  = RamLimitTo3GB,
       guid  = CONFIGDXE_FORM_SET_GUID;
 
-    efivarstore ADVANCED_DEVICE_TREE_VARSTORE_DATA,
+    efivarstore ADVANCED_FAN_ON_GPIO_VARSTORE_DATA,
       attribute = EFI_VARIABLE_BOOTSERVICE_ACCESS | EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_NON_VOLATILE,
-      name  = OptDeviceTree,
+      name  = FanOnGpio,
+      guid  = CONFIGDXE_FORM_SET_GUID;
+
+    efivarstore ADVANCED_FANTEMP_VARSTORE_DATA,
+      attribute = EFI_VARIABLE_BOOTSERVICE_ACCESS | EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_NON_VOLATILE,
+      name  = FanTemp,
+      guid  = CONFIGDXE_FORM_SET_GUID;
+
+    efivarstore ADVANCED_XHCIPCI_VARSTORE_DATA,
+      attribute = EFI_VARIABLE_BOOTSERVICE_ACCESS | EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_NON_VOLATILE,
+      name  = XhciPci,
+      guid  = CONFIGDXE_FORM_SET_GUID;
+
+    efivarstore ADVANCED_XHCIPCI_VARSTORE_DATA,
+      attribute = EFI_VARIABLE_BOOTSERVICE_ACCESS | EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_NON_VOLATILE,
+      name  = XhciReload,
+      guid  = CONFIGDXE_FORM_SET_GUID;
+
+    efivarstore SYSTEM_TABLE_MODE_VARSTORE_DATA,
+      attribute = EFI_VARIABLE_BOOTSERVICE_ACCESS | EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_NON_VOLATILE,
+      name  = SystemTableMode,
+      guid  = CONFIGDXE_FORM_SET_GUID;
+
+    efivarstore ADVANCED_ASSET_TAG_VARSTORE_DATA,
+      attribute = EFI_VARIABLE_BOOTSERVICE_ACCESS | EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_NON_VOLATILE,
+      name  = AssetTag,
       guid  = CONFIGDXE_FORM_SET_GUID;
 
     efivarstore MMC_SD_VARSTORE_DATA,
@@ -200,14 +106,14 @@ formset
       name  = MmcSdHighSpeedMHz,
       guid  = CONFIGDXE_FORM_SET_GUID;
 
+    efivarstore MMC_EMMC_DMA_VARSTORE_DATA,
+      attribute = EFI_VARIABLE_BOOTSERVICE_ACCESS | EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_NON_VOLATILE,
+      name  = MmcEnableDma,
+      guid  = CONFIGDXE_FORM_SET_GUID;
+
     efivarstore DEBUG_ENABLE_JTAG_VARSTORE_DATA,
       attribute = EFI_VARIABLE_BOOTSERVICE_ACCESS | EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_NON_VOLATILE,
       name  = DebugEnableJTAG,
-      guid  = CONFIGDXE_FORM_SET_GUID;
-
-    efivarstore DEBUG_SHOW_UEFI_EXIT_VARSTORE_DATA,
-      attribute = EFI_VARIABLE_BOOTSERVICE_ACCESS | EFI_VARIABLE_RUNTIME_ACCESS | EFI_VARIABLE_NON_VOLATILE,
-      name  = DebugShowUEFIExit,
       guid  = CONFIGDXE_FORM_SET_GUID;
 
     efivarstore DISPLAY_ENABLE_SCALED_VMODES_VARSTORE_DATA,
@@ -253,10 +159,10 @@ formset
             prompt      = STRING_TOKEN(STR_CHIPSET_CLOCK_CPU_PROMPT),
             help        = STRING_TOKEN(STR_CHIPSET_CLOCK_CPU_HELP),
             flags       = NUMERIC_SIZE_4 | INTERACTIVE | RESET_REQUIRED,
-            option text = STRING_TOKEN(STR_CHIPSET_CLOCK_CPU_LOW), value = 0, flags = 0;
-            option text = STRING_TOKEN(STR_CHIPSET_CLOCK_CPU_DEF), value = 1, flags = DEFAULT;
-            option text = STRING_TOKEN(STR_CHIPSET_CLOCK_CPU_MAX), value = 2, flags = 0;
-            option text = STRING_TOKEN(STR_CHIPSET_CLOCK_CPU_CUSTOM), value = 3, flags = 0;
+            option text = STRING_TOKEN(STR_CHIPSET_CLOCK_CPU_LOW), value = CHIPSET_CPU_CLOCK_LOW, flags = 0;
+            option text = STRING_TOKEN(STR_CHIPSET_CLOCK_CPU_DEF), value = CHIPSET_CPU_CLOCK_DEFAULT, flags = DEFAULT;
+            option text = STRING_TOKEN(STR_CHIPSET_CLOCK_CPU_MAX), value = CHIPSET_CPU_CLOCK_MAX, flags = 0;
+            option text = STRING_TOKEN(STR_CHIPSET_CLOCK_CPU_CUSTOM), value = CHIPSET_CPU_CLOCK_CUSTOM, flags = 0;
         endoneof;
 
         grayoutif NOT ideqval CpuClock.Clock == 3;
@@ -285,13 +191,67 @@ formset
           endoneof;
         endif;
 
-        oneof varid = OptDeviceTree.Enabled,
-            prompt      = STRING_TOKEN(STR_ADVANCED_DT_PROMPT),
-            help        = STRING_TOKEN(STR_ADVANCED_DT_HELP),
+        oneof varid = SystemTableMode.Mode,
+            prompt      = STRING_TOKEN(STR_ADVANCED_SYSTAB_PROMPT),
+            help        = STRING_TOKEN(STR_ADVANCED_SYSTAB_HELP),
             flags       = NUMERIC_SIZE_4 | INTERACTIVE | RESET_REQUIRED,
-            option text = STRING_TOKEN(STR_ADVANCED_DT_OFF), value = 0, flags = 0;
-            option text = STRING_TOKEN(STR_ADVANCED_DT_ON), value = 1, flags = DEFAULT;
+            option text = STRING_TOKEN(STR_ADVANCED_SYSTAB_ACPI), value = SYSTEM_TABLE_MODE_ACPI, flags = 0;
+            option text = STRING_TOKEN(STR_ADVANCED_SYSTAB_BOTH), value = SYSTEM_TABLE_MODE_BOTH, flags = DEFAULT;
+            option text = STRING_TOKEN(STR_ADVANCED_SYSTAB_DT), value = SYSTEM_TABLE_MODE_DT, flags =0;
         endoneof;
+
+#if (RPI_MODEL == 4)
+        grayoutif ideqval SystemTableMode.Mode == SYSTEM_TABLE_MODE_DT;
+          oneof varid = FanOnGpio.Enabled,
+              prompt      = STRING_TOKEN(STR_ADVANCED_FANONGPIO_PROMPT),
+              help        = STRING_TOKEN(STR_ADVANCED_FANONGPIO_HELP),
+              flags       = NUMERIC_SIZE_4 | INTERACTIVE | RESET_REQUIRED,
+              option text = STRING_TOKEN(STR_ADVANCED_FANONGPIO_OFF), value = 0, flags = DEFAULT;
+              option text = STRING_TOKEN(STR_ADVANCED_FANONGPIO_18), value = 18, flags = 0;
+              option text = STRING_TOKEN(STR_ADVANCED_FANONGPIO_19), value = 19, flags = 0;
+          endoneof;
+        endif;
+
+        grayoutif ideqval FanOnGpio.Enabled == 0 OR ideqval SystemTableMode.Mode == SYSTEM_TABLE_MODE_DT;
+          numeric varid = FanTemp.Value,
+              prompt      = STRING_TOKEN(STR_ADVANCED_FANTEMP_PROMPT),
+              help        = STRING_TOKEN(STR_ADVANCED_FANTEMP_HELP),
+              flags       = DISPLAY_UINT_DEC | NUMERIC_SIZE_4 | INTERACTIVE | RESET_REQUIRED,
+	      minimum = 50,
+              maximum = 80,
+              default = 60,
+          endnumeric;
+        endif;
+
+        suppressif ideqval XhciPci.Value == 2;
+          grayoutif ideqval SystemTableMode.Mode == SYSTEM_TABLE_MODE_DT;
+            oneof varid = XhciPci.Value,
+              prompt      = STRING_TOKEN(STR_ADVANCED_XHCIPCI_PROMPT),
+              help        = STRING_TOKEN(STR_ADVANCED_XHCIPCI_HELP),
+              flags       = NUMERIC_SIZE_4 | INTERACTIVE | RESET_REQUIRED,
+              option text = STRING_TOKEN(STR_ADVANCED_XHCIPCI_XHCI), value = 0, flags = DEFAULT;
+              option text = STRING_TOKEN(STR_ADVANCED_XHCIPCI_PCIE), value = 1, flags = 0;
+            endoneof;
+          endif;
+
+          grayoutif ideqval SystemTableMode.Mode == SYSTEM_TABLE_MODE_ACPI;
+            oneof varid = XhciReload.Value,
+              prompt      = STRING_TOKEN(STR_ADVANCED_XHCIRELOAD_PROMPT),
+              help        = STRING_TOKEN(STR_ADVANCED_XHCIRELOAD_HELP),
+              flags       = NUMERIC_SIZE_4 | INTERACTIVE | RESET_REQUIRED,
+              option text = STRING_TOKEN(STR_ADVANCED_XHCIRELOAD_DISABLE), value = 0, flags = DEFAULT;
+              option text = STRING_TOKEN(STR_ADVANCED_XHCIRELOAD_RELOAD), value = 1, flags = 0;
+            endoneof;
+          endif;
+        endif;
+#endif
+        string varid = AssetTag.AssetTag,
+            prompt  = STRING_TOKEN(STR_ADVANCED_ASSET_TAG_PROMPT),
+            help    = STRING_TOKEN(STR_ADVANCED_ASSET_TAG_HELP),
+            flags   = INTERACTIVE | RESET_REQUIRED,
+            minsize = 0,
+            maxsize = ASSET_TAG_STR_MAX_LEN,
+        endstring;
     endform;
 
     form formid = 0x1003,
@@ -352,6 +312,18 @@ formset
              maximum = 100,
              default = 50,
         endnumeric;
+#if (RPI_MODEL == 4)
+        grayoutif ideqval SdIsArasan.Routing == 1;
+        oneof varid = MmcEnableDma.EnableDma,
+            prompt      = STRING_TOKEN(STR_MMC_EMMC_PROMPT),
+            help        = STRING_TOKEN(STR_MMC_EMMC_HELP),
+            flags       = NUMERIC_SIZE_4 | INTERACTIVE | RESET_REQUIRED,
+            option text = STRING_TOKEN(STR_MMC_EMMC_PIO), value = 0, flags = 0;
+            option text = STRING_TOKEN(STR_MMC_EMMC_DMA), value = 1, flags = DEFAULT;
+        endoneof;
+        endif;
+#endif
+
     endform;
 
     form formid = 0x1004,
@@ -413,14 +385,6 @@ formset
             flags       = NUMERIC_SIZE_4 | INTERACTIVE | RESET_REQUIRED,
             option text = STRING_TOKEN(STR_DEBUG_JTAG_ENABLE), value = 1, flags = 0;
             option text = STRING_TOKEN(STR_DEBUG_JTAG_DISABLE), value = 0, flags = DEFAULT;
-        endoneof;
-
-        oneof varid = DebugShowUEFIExit.Show,
-            prompt      = STRING_TOKEN(STR_DEBUG_EXIT_SHOW_PROMPT),
-            help        = STRING_TOKEN(STR_DEBUG_EXIT_SHOW_HELP),
-            flags       = NUMERIC_SIZE_4 | INTERACTIVE,
-            option text = STRING_TOKEN(STR_DEBUG_EXIT_SHOW_NO), value = 0, flags = DEFAULT;
-            option text = STRING_TOKEN(STR_DEBUG_EXIT_SHOW_YES), value = 1, flags = 0;
         endoneof;
     endform;
 endformset;

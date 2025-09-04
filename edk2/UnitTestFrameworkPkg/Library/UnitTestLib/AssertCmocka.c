@@ -48,7 +48,7 @@ UnitTestAssertTrue (
 {
   CHAR8  TempStr[MAX_STRING_SIZE];
 
-  snprintf (TempStr, sizeof(TempStr), "UT_ASSERT_TRUE(%s:%x)", Description, Expression);
+  snprintf (TempStr, sizeof (TempStr), "UT_ASSERT_TRUE(%s:%x)", Description, Expression);
   _assert_true (Expression, TempStr, FileName, (INT32)LineNumber);
 
   return Expression;
@@ -84,7 +84,7 @@ UnitTestAssertFalse (
 {
   CHAR8  TempStr[MAX_STRING_SIZE];
 
-  snprintf (TempStr, sizeof(TempStr), "UT_ASSERT_FALSE(%s:%x)", Description, Expression);
+  snprintf (TempStr, sizeof (TempStr), "UT_ASSERT_FALSE(%s:%x)", Description, Expression);
   _assert_true (!Expression, TempStr, FileName, (INT32)LineNumber);
 
   return !Expression;
@@ -120,7 +120,7 @@ UnitTestAssertNotEfiError (
 {
   CHAR8  TempStr[MAX_STRING_SIZE];
 
-  snprintf (TempStr, sizeof(TempStr), "UT_ASSERT_NOT_EFI_ERROR(%s:%p)", Description, (void *)Status);
+  snprintf (TempStr, sizeof (TempStr), "UT_ASSERT_NOT_EFI_ERROR(%s:%p)", Description, (void *)Status);
   _assert_true (!EFI_ERROR (Status), TempStr, FileName, (INT32)LineNumber);
 
   return !EFI_ERROR (Status);
@@ -161,7 +161,7 @@ UnitTestAssertEqual (
 {
   CHAR8  TempStr[MAX_STRING_SIZE];
 
-  snprintf (TempStr, sizeof(TempStr), "UT_ASSERT_EQUAL(%s:%llx, %s:%llx)", DescriptionA, ValueA, DescriptionB, ValueB);
+  snprintf (TempStr, sizeof (TempStr), "UT_ASSERT_EQUAL(%s:%llx, %s:%llx)", DescriptionA, ValueA, DescriptionB, ValueB);
   _assert_true ((ValueA == ValueB), TempStr, FileName, (INT32)LineNumber);
 
   return (ValueA == ValueB);
@@ -208,9 +208,9 @@ UnitTestAssertMemEqual (
   CHAR8    TempStr[MAX_STRING_SIZE];
   BOOLEAN  Result;
 
-  Result = (CompareMem(BufferA, BufferB, Length) == 0);
+  Result = (CompareMem (BufferA, BufferB, Length) == 0);
 
-  snprintf (TempStr, sizeof(TempStr), "UT_ASSERT_MEM_EQUAL(%s:%p, %s:%p)", DescriptionA, BufferA, DescriptionB, BufferB);
+  snprintf (TempStr, sizeof (TempStr), "UT_ASSERT_MEM_EQUAL(%s:%p, %s:%p)", DescriptionA, BufferA, DescriptionB, BufferB);
   _assert_true (Result, TempStr, FileName, (INT32)LineNumber);
 
   return Result;
@@ -251,7 +251,7 @@ UnitTestAssertNotEqual (
 {
   CHAR8  TempStr[MAX_STRING_SIZE];
 
-  snprintf (TempStr, sizeof(TempStr), "UT_ASSERT_NOT_EQUAL(%s:%llx, %s:%llx)", DescriptionA, ValueA, DescriptionB, ValueB);
+  snprintf (TempStr, sizeof (TempStr), "UT_ASSERT_NOT_EQUAL(%s:%llx, %s:%llx)", DescriptionA, ValueA, DescriptionB, ValueB);
   _assert_true ((ValueA != ValueB), TempStr, FileName, (INT32)LineNumber);
 
   return (ValueA != ValueB);
@@ -290,7 +290,7 @@ UnitTestAssertStatusEqual (
 {
   CHAR8  TempStr[MAX_STRING_SIZE];
 
-  snprintf (TempStr, sizeof(TempStr), "UT_ASSERT_STATUS_EQUAL(%s:%p)", Description, (VOID *)Status);
+  snprintf (TempStr, sizeof (TempStr), "UT_ASSERT_STATUS_EQUAL(%s:%p)", Description, (VOID *)Status);
   _assert_true ((Status == Expected), TempStr, FileName, (INT32)LineNumber);
 
   return (Status == Expected);
@@ -328,8 +328,80 @@ UnitTestAssertNotNull (
 {
   CHAR8  TempStr[MAX_STRING_SIZE];
 
-  snprintf (TempStr, sizeof(TempStr), "UT_ASSERT_NOT_NULL(%s:%p)", PointerName, Pointer);
+  snprintf (TempStr, sizeof (TempStr), "UT_ASSERT_NOT_NULL(%s:%p)", PointerName, Pointer);
   _assert_true ((Pointer != NULL), TempStr, FileName, (INT32)LineNumber);
 
   return (Pointer != NULL);
+}
+
+/**
+  If UnitTestStatus is UNIT_TEST_PASSED, then log an info message and return
+  TRUE because an ASSERT() was expected when FunctionCall was executed and an
+  ASSERT() was triggered. If UnitTestStatus is UNIT_TEST_SKIPPED, then log a
+  warning message and return TRUE because ASSERT() macros are disabled.  If
+  UnitTestStatus is UNIT_TEST_ERROR_TEST_FAILED, then log an error message and
+  return FALSE because an ASSERT() was expected when FunctionCall was executed,
+  but no ASSERT() conditions were triggered.  The log messages contain
+  FunctionName, LineNumber, and FileName strings to provide the location of the
+  UT_EXPECT_ASSERT_FAILURE() macro.
+
+  @param[in]  UnitTestStatus  The status from UT_EXPECT_ASSERT_FAILURE() that
+                              is either pass, skipped, or failed.
+  @param[in]  FunctionName    Null-terminated ASCII string of the function
+                              executing the UT_EXPECT_ASSERT_FAILURE() macro.
+  @param[in]  LineNumber      The source file line number of the the function
+                              executing the UT_EXPECT_ASSERT_FAILURE() macro.
+  @param[in]  FileName        Null-terminated ASCII string of the filename
+                              executing the UT_EXPECT_ASSERT_FAILURE() macro.
+  @param[in]  FunctionCall    Null-terminated ASCII string of the function call
+                              executed by the UT_EXPECT_ASSERT_FAILURE() macro.
+  @param[out] ResultStatus    Used to return the UnitTestStatus value to the
+                              caller of UT_EXPECT_ASSERT_FAILURE().  This is
+                              optional parameter that may be NULL.
+
+  @retval  TRUE   UnitTestStatus is UNIT_TEST_PASSED.
+  @retval  TRUE   UnitTestStatus is UNIT_TEST_SKIPPED.
+  @retval  FALSE  UnitTestStatus is UNIT_TEST_ERROR_TEST_FAILED.
+**/
+BOOLEAN
+EFIAPI
+UnitTestExpectAssertFailure (
+  IN  UNIT_TEST_STATUS  UnitTestStatus,
+  IN  CONST CHAR8       *FunctionName,
+  IN  UINTN             LineNumber,
+  IN  CONST CHAR8       *FileName,
+  IN  CONST CHAR8       *FunctionCall,
+  OUT UNIT_TEST_STATUS  *ResultStatus  OPTIONAL
+  )
+{
+  CHAR8  TempStr[MAX_STRING_SIZE];
+
+  if (ResultStatus != NULL) {
+    *ResultStatus = UnitTestStatus;
+  }
+
+  if (UnitTestStatus == UNIT_TEST_PASSED) {
+    UT_LOG_INFO (
+      "[ASSERT PASS] %a:%d: UT_EXPECT_ASSERT_FAILURE(%a) detected expected assert\n",
+      FileName,
+      LineNumber,
+      FunctionCall
+      );
+  }
+
+  if (UnitTestStatus == UNIT_TEST_SKIPPED) {
+    UT_LOG_WARNING (
+      "[ASSERT WARN] %a:%d: UT_EXPECT_ASSERT_FAILURE(%a) disabled\n",
+      FileName,
+      LineNumber,
+      FunctionCall
+      );
+  }
+
+  if (UnitTestStatus == UNIT_TEST_ERROR_TEST_FAILED) {
+    snprintf (TempStr, sizeof (TempStr), "UT_EXPECT_ASSERT_FAILURE(%s) did not trigger ASSERT()", FunctionCall);
+    _assert_true (FALSE, TempStr, FileName, (INT32)LineNumber);
+  }
+
+  return (UnitTestStatus != UNIT_TEST_ERROR_TEST_FAILED);
 }

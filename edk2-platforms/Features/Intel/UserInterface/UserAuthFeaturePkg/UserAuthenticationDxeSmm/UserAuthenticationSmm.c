@@ -1,6 +1,6 @@
 /** @file
 
-  Copyright (c) 2019, Intel Corporation. All rights reserved.<BR>
+  Copyright (c) 2019 - 2023, Intel Corporation. All rights reserved.<BR>
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
 **/
@@ -13,6 +13,7 @@ UINTN                           mAdminPasswordTryCount = 0;
 
 BOOLEAN                         mNeedReVerify = TRUE;
 BOOLEAN                         mPasswordVerified = FALSE;
+EFI_HANDLE                      mSmmHandle = NULL;
 
 /**
   Verify if the password is correct.
@@ -503,7 +504,12 @@ SmmPasswordHandler (
 
     if (!IsPasswordVerified (UserGuid, SmmCommunicateSetPassword.OldPassword, PasswordLen + 1)) {
       DEBUG ((DEBUG_ERROR, "SmmPasswordHandler: PasswordVerify - FAIL\n"));
-      Status = EFI_SECURITY_VIOLATION;
+      if (*PasswordTryCount >= PASSWORD_MAX_TRY_COUNT) {
+        DEBUG ((DEBUG_ERROR, "SmmPasswordHandler: SET_PASSWORD try count reach!\n"));
+        Status = EFI_ACCESS_DENIED;
+      } else {
+        Status = EFI_SECURITY_VIOLATION;
+      }
       goto EXIT;
     }
 
@@ -553,7 +559,12 @@ SmmPasswordHandler (
     }
     if (!IsPasswordVerified (UserGuid, SmmCommunicateVerifyPassword.Password, PasswordLen + 1)) {
       DEBUG ((DEBUG_ERROR, "SmmPasswordHandler: PasswordVerify - FAIL\n"));
-      Status = EFI_SECURITY_VIOLATION;
+      if (*PasswordTryCount >= PASSWORD_MAX_TRY_COUNT) {
+        DEBUG ((DEBUG_ERROR, "SmmPasswordHandler: VERIFY_PASSWORD try count reach!\n"));
+        Status = EFI_ACCESS_DENIED;
+      } else {
+        Status = EFI_SECURITY_VIOLATION;
+      }
       goto EXIT;
     }
     mPasswordVerified = TRUE;
@@ -613,6 +624,30 @@ EXIT:
 }
 
 /**
+  Performs Exit Boot Services UserAuthentication actions
+
+  @param[in] Protocol   Points to the protocol's unique identifier.
+  @param[in] Interface  Points to the interface instance.
+  @param[in] Handle     The handle on which the interface was installed.
+
+  @retval EFI_SUCCESS   Notification runs successfully.
+**/
+EFI_STATUS
+EFIAPI
+UaExitBootServices (
+  IN CONST EFI_GUID     *Protocol,
+  IN VOID               *Interface,
+  IN EFI_HANDLE         Handle
+  )
+{
+  DEBUG ((DEBUG_INFO, "Unregister User Authentication Smi\n"));
+
+  gMmst->MmiHandlerUnRegister(mSmmHandle);
+
+  return EFI_SUCCESS;
+}
+
+/**
   Main entry for this driver.
 
   @param ImageHandle     Image handle this driver.
@@ -622,47 +657,45 @@ EXIT:
 
 **/
 EFI_STATUS
-EFIAPI
 PasswordSmmInit (
-  IN EFI_HANDLE                         ImageHandle,
-  IN EFI_SYSTEM_TABLE                   *SystemTable
+  VOID
   )
 {
   EFI_STATUS                            Status;
-  EFI_HANDLE                            SmmHandle;
-  EDKII_VARIABLE_LOCK_PROTOCOL          *VariableLock;
-  CHAR16                                PasswordHistoryName[sizeof(USER_AUTHENTICATION_VAR_NAME)/sizeof(CHAR16) + 5];
-  UINTN                                 Index;
+  EFI_EVENT                             ExitBootServicesEvent;
+  EFI_EVENT                             LegacyBootEvent;
+  EFI_EVENT                             SmmExitBootServicesEvent;
 
   ASSERT (PASSWORD_HASH_SIZE == SHA256_DIGEST_SIZE);
   ASSERT (PASSWORD_HISTORY_CHECK_COUNT < 0xFFFF);
 
-  Status = gSmst->SmmLocateProtocol (&gEfiSmmVariableProtocolGuid, NULL, (VOID**)&mSmmVariable);
+  Status = gMmst->MmLocateProtocol (&gEfiSmmVariableProtocolGuid, NULL, (VOID**)&mSmmVariable);
   ASSERT_EFI_ERROR (Status);
 
   //
   // Make password variables read-only for DXE driver for security concern.
   //
-  Status = gBS->LocateProtocol (&gEdkiiVariableLockProtocolGuid, NULL, (VOID **) &VariableLock);
-  if (!EFI_ERROR (Status)) {
-    Status = VariableLock->RequestToLock (VariableLock, USER_AUTHENTICATION_VAR_NAME, &gUserAuthenticationGuid);
-    ASSERT_EFI_ERROR (Status);
-
-    for (Index = 1; Index <= PASSWORD_HISTORY_CHECK_COUNT; Index++) {
-      UnicodeSPrint (PasswordHistoryName, sizeof (PasswordHistoryName), L"%s%04x", USER_AUTHENTICATION_VAR_NAME, Index);
-      Status = VariableLock->RequestToLock (VariableLock, PasswordHistoryName, &gUserAuthenticationGuid);
-      ASSERT_EFI_ERROR (Status);
-    }
-    Status = VariableLock->RequestToLock (VariableLock, USER_AUTHENTICATION_HISTORY_LAST_VAR_NAME, &gUserAuthenticationGuid);
-    ASSERT_EFI_ERROR (Status);
-  }
-
-  SmmHandle = NULL;
-  Status    = gSmst->SmiHandlerRegister (SmmPasswordHandler, &gUserAuthenticationGuid, &SmmHandle);
+  Status = LockPasswordVariable ();
   ASSERT_EFI_ERROR (Status);
   if (EFI_ERROR (Status)) {
     return Status;
   }
+
+  Status = gMmst->MmiHandlerRegister (SmmPasswordHandler, &gUserAuthenticationGuid, &mSmmHandle);
+  ASSERT_EFI_ERROR (Status);
+  if (EFI_ERROR (Status)) {
+    return Status;
+  }
+
+  //
+  // Register for SmmExitBootServices, SmmLegacyBoot and EventExitBootServices notification.
+  //
+  Status = gMmst->MmRegisterProtocolNotify (&gEdkiiSmmExitBootServicesProtocolGuid, UaExitBootServices, &SmmExitBootServicesEvent);
+  ASSERT_EFI_ERROR (Status);
+  Status = gMmst->MmRegisterProtocolNotify (&gEdkiiSmmLegacyBootProtocolGuid, UaExitBootServices, &LegacyBootEvent);
+  ASSERT_EFI_ERROR (Status);
+  Status = gMmst->MmRegisterProtocolNotify (&gEfiEventExitBootServicesGuid, UaExitBootServices, &ExitBootServicesEvent);
+  ASSERT_EFI_ERROR (Status);
 
   if (IsPasswordCleared()) {
     DEBUG ((DEBUG_INFO, "IsPasswordCleared\n"));

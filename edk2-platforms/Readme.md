@@ -1,5 +1,8 @@
-This branch holds all platforms actively maintained against the
-[edk2](https://github.com/tianocore/edk2) master branch.
+This branch holds platforms and drivers actively maintained against the
+[edk2](https://github.com/tianocore/edk2) default branch.
+If any platform or driver is failing to build against current edk2 and (if
+applicable) [edk2-non-osi](https://github.com/tianocore/edk2-non-osi), please
+raise a github issue.
 
 For generic information about the edk2-platforms repository, and the process
 under which _stable_ and _devel_ branches can be added for individual platforms,
@@ -9,7 +12,11 @@ please see
 The majority of the content in the EDK II open source project uses a
 [BSD-2-Clause Plus Patent License](License.txt).  Additional details on EDK II
 open source project code contributions can be found in the edk2 repository
-[Readme.md](https://github.com/tianocore/edk2/blob/master/Readme.md).
+[Readme.md](https://github.com/tianocore/edk2/blob/master/ReadMe.rst).
+The EDK II Platforms open source project contains the following components that
+are covered by additional licenses:
+
+- [`Silicon/RISC-V/ProcessorPkg/Library/RiscVOpensbiLib/opensbi`](https://github.com/riscv/opensbi/blob/master/COPYING.BSD)
 
 # INDEX
 * [Overview](#overview)
@@ -17,7 +24,6 @@ open source project code contributions can be found in the edk2 repository
    * [Manual building](#manual-building)
    * [Using uefi-tools helper scripts](#using-uefi-tools-helper-scripts)
 * [How To Build (Windows Environment)](#how-to-build-windows-environment)
-* [Supported Platforms](#supported-platforms)
 * [Maintainers](#maintainers)
 
 # Overview
@@ -28,15 +34,35 @@ Many platforms require additional image processing beyond the EDK2 build.
 Any such steps should be documented (as a Readme.md), and any necessary helper
 scripts be contained, under said platform directory.
 
-Any contributions to this branch should be submitted via email to the
-edk2-devel mailing list with a subject prefix of `[platforms]`. See
-[Laszlo's excellent guide](https://github.com/tianocore/tianocore.github.io/wiki/Laszlo's-unkempt-git-guide-for-edk2-contributors-and-maintainers) for details
-on how to do this successfully.
+Any contributions to this repo should be submitted via GitHub Pull Request.
+
+For details of who owns code in certain parts of the repo, see the CODEOWNERS and
+REVIEWERS files. Look in CONTRIBUTORS.md to find out people's names and their
+email addresses.
+
+In general, you should not privately email the maintainer. You should
+email the edk2-devel list, and Cc the area maintainers and
+reviewers.
+
+If the maintainer wants to hand over the role to other people,
+they should create a PR on GitHub to update CODEOWNERS,
+REVIEWERS and CONTRIBUTORS.md with new maintainer, and the new maintainer
+should review the PR and approve it.
+
+EDK II Platforms
+----------------
+W: https://github.com/tianocore/tianocore.github.io/wiki/EDK-II
+L: https://edk2.groups.io/g/devel/
+T: git - https://github.com/tianocore/edk2-platforms.git
+
+Responsible Disclosure, Reporting Security Issues
+-------------------------------------------------
+W: https://github.com/tianocore/tianocore.github.io/wiki/Security
 
 # How to build (Linux Environment)
 
 ## Prerequisites
-The build tools themselves depend on Python (2) and libuuid. Most Linux systems
+The build tools themselves depend on Python (3) and libuuid. Most Linux systems
 will come with a Python environment installed by default, but you usually need
 to install uuid-dev (or uuid-devel, depending on distribution) manually.
 
@@ -52,15 +78,26 @@ ARM                 | arm-linux-gnueabihf-
 IA32                | i?86-linux-gnu-* _or_ x86_64-linux-gnu-
 IPF                 | ia64-linux-gnu
 X64                 | x86_64-linux-gnu-
+RISCV64             | riscv64-unknown-elf-
+LOONGARCH64         | loongarch64-unknown-linux-
 
 \* i386, i486, i586 or i686
 
 ### GCC
-Linaro provides GCC toolchains for
-[aarch64-linux-gnu](https://releases.linaro.org/components/toolchain/binaries/latest/aarch64-linux-gnu/)
-and [arm-linux-gnueabihf](https://releases.linaro.org/components/toolchain/binaries/latest/arm-linux-gnueabihf/)
+Arm provides GCC toolchains for aarch64-linux-gnu and arm-linux-gnueabihf at
+[GNU Toolchain for the A-profile Architecture](https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-a/downloads)
 compiled to run on x86_64/i686 Linux and i686 Windows. Some Linux distributions
 provide their own packaged cross-toolchains.
+
+### GCC for RISC-V
+RISC-V open source community provides GCC toolchains for
+[riscv64-unknown-elf](https://github.com/riscv/riscv-gnu-toolchain)
+compiled to run on x86 Linux.
+
+### GCC for LoongArch
+Loonson open source community provides GCC toolchains for
+[loongarch64-unknown-elf](https://github.com/loongson/build-tools)
+compiled to run on x86 Linux
 
 ### clang
 Clang does not require separate cross compilers, but it does need a
@@ -87,6 +124,7 @@ target-specific binutils. These are included with any prepackaged GCC toolchain
    $ git submodule update --init
    ...
    $ git clone https://github.com/tianocore/edk2-platforms.git
+   $ git submodule update --init
    ...
    $ git clone https://github.com/tianocore/edk2-non-osi.git
    ```
@@ -106,10 +144,6 @@ target-specific binutils. These are included with any prepackaged GCC toolchain
 1. Build BaseTools
 
    `make -C edk2/BaseTools`
-
-   (BaseTools can currently not be built in parallel, so do not specify any `-j`
-   option, either on the command line or in a **MAKEFLAGS** environment
-   variable.)
 
 ### Build options
 There are a number of options that can (or must) be specified at the point of
@@ -133,21 +167,11 @@ After a successful build, the resulting images can be found in
 `Build/{Platform Name}/{TARGET}_{TOOL_CHAIN_TAG}/FV`.
 
 ### Build a platform
-The main build process _can_ run in parallel - so figure out how many threads we
-have available.
-
+The main build process runs in parallel natively. For the toolchain tag, use
+GCC for gcc version 5 or later, GCC4x for earlier versions, or
+CLANGPDB/CLANGDWARF as appropriate when building with clang.
 ```
-$ getconf _NPROCESSORS_ONLN
-8
-```
-OK, so we have 8 CPUs - let's tell the build to use a little more than that:
-```
-$ NUM_CPUS=$((`getconf _NPROCESSORS_ONLN` + 2))
-```
-For the toolchain tag, use GCC5 for gcc version 5 or later, GCC4x for
-earlier versions, or CLANG35/CLANG38 as appropriate when building with clang.
-```
-$ build -n $NUM_CPUS -a AARCH64 -t GCC5 -p Platform/ARM/JunoPkg/ArmJuno.dsc
+$ build -a AARCH64 -t GCC -p Platform/ARM/JunoPkg/ArmJuno.dsc
 ```
 (Note that the description file gets resolved by the build command through
 searching in all locations specified in **PACKAGES_PATH**.)
@@ -157,9 +181,9 @@ When cross-compiling, or building with a different version of the compiler than
 the default `gcc` or `clang`(/binutils), we additionally need to inform the
 build command which toolchain to use. We do this by setting the environment
 variable `{TOOL_CHAIN_TAG}_{TARGET_ARCH}_PREFIX` - in the case above,
-**GCC5_AARCH64_PREFIX**.
+**GCC_AARCH64_PREFIX**.
 
-So, referring to the cross compiler toolchain table above, we should prepend the `build` command line with `GCC5_AARCH64_PREFIX=aarch64-linux-gnu-`.
+So, referring to the cross compiler toolchain table above, we should prepend the `build` command line with `GCC_AARCH64_PREFIX=aarch64-linux-gnu-`.
 
 ## Using uefi-tools helper scripts
 uefi-tools is a completely unofficial set of helper-scripts developed by Linaro.
@@ -199,64 +223,38 @@ $ ./uefi-tools/edk2-build.sh -b DEBUG -b RELEASE
 (I genuinely have no idea. Please help!)
 
 
-# Supported Platforms
-
-These are the platforms currently supported by this tree - grouped by
-Processor/SoC vendor, rather than platform vendor.
-
-If there are any additional build steps beyond the generic ones listed above,
-they will be documented with the platform.
-
-## AMD
-* [Cello](Platform/LeMaker/CelloBoard)
-* [Overdrive](Platform/AMD/OverdriveBoard)
-* [Overdrive 1000](Platform/SoftIron/Overdrive1000Board)
-
-## [ARM](Platform/ARM/Readme.md)
-* [Juno](Platform/ARM/JunoPkg)
-* [SGI family](Platform/ARM/SgiPkg)
-
-## BeagleBoard
-* [BeagleBoard](Platform/BeagleBoard/BeagleBoardPkg)
-
-## Hisilicon
-* [D03](Platform/Hisilicon/D03)
-* [D05](Platform/Hisilicon/D05)
-* [D06](Platform/Hisilicon/D06)
-* [HiKey](Platform/Hisilicon/HiKey)
-* [HiKey960](Platform/Hisilicon/HiKey960)
-
-## Intel
-### [Minimum Platforms](Platform/Intel/Readme.md)
-* [Kaby Lake](Platform/Intel/KabylakeOpenBoardPkg)
-* [Simics](Platform/Intel/SimicsOpenBoardPkg)
-* [Whiskey Lake](Platform/Intel/WhiskeylakeOpenBoardPkg)
-* [Comet Lake](Platform/Intel/CometlakeOpenBoardPkg)
-
-For more information, see the
-[EDK II Minimum Platform Specification](https://edk2-docs.gitbooks.io/edk-ii-minimum-platform-specification).
-### Other Platforms
-##### Intel&reg; Quark SoC X1000 based platforms
-* [Galileo](Platform/Intel/QuarkPlatformPkg)
-##### Minnowboard Max/Turbot based on Intel Valleyview2 SoC
-* [Minnowboard Max](Platform/Intel/Vlv2TbltDevicePkg)
-
-## Marvell
-* [Armada 70x0](Platform/Marvell/Armada70x0Db)
-* [Armada 80x0](Platform/Marvell/Armada80x0Db)
-* [CN913x](Platform/Marvell/Cn913xDb)
-* [SolidRun Armada MacchiatoBin](Platform/SolidRun/Armada80x0McBin)
-
-## Raspberry Pi
-* [Pi 3](Platform/RaspberryPi/RPi3)
-* [Pi 4](Platform/RaspberryPi/RPi4)
-
-## Socionext
-* [SynQuacer](Platform/Socionext/DeveloperBox)
-
-## NXP
-* [LS1043aRdb](Platform/NXP/LS1043aRdbPkg)
-
 # Maintainers
 
-See [Maintainers.txt](Maintainers.txt).
+See [CONTRIBUTORS.md](CONTRIBUTORS.md), [CODEOWNERS](CODEOWNERS) and [REVIEWERS](REVIEWERS).
+
+# Submodules
+
+Submodule in EDK II Platforms is allowed but submodule chain should be avoided
+as possible as we can. Currently EDK II Platforms contains the following
+submodules
+
+- Silicon/RISC-V/ProcessorPkg/Library/RiscVOpensbiLib/opensbi
+
+To get a full, buildable EDK II repository, use following steps of git command
+
+```bash
+  git clone https://github.com/tianocore/edk2-platforms.git
+  cd edk2-platforms
+  git submodule update --init
+  cd ..
+```
+
+If there's update for submodules, use following git commands to get the latest
+submodules code.
+
+```bash
+  cd edk2-platforms
+  git pull
+  git submodule update
+```
+
+Note: When cloning submodule repos, '--recursive' option is not recommended.
+EDK II Platforms itself will not use any code/feature from submodules in above
+submodules. So using '--recursive' adds a dependency on being able to reach
+servers we do not actually want any code from, as well as needlessly
+downloading code we will not use.

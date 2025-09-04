@@ -297,8 +297,9 @@ Options:
 
 {-\|+}\ **allow_dup_skey**
     **-allow_dup_skey** disables user-to-user authentication for this
-    principal by prohibiting this principal from obtaining a session
-    key for another user.  **+allow_dup_skey** clears this flag.
+    principal by prohibiting others from obtaining a service ticket
+    encrypted in this principal's TGT session key.
+    **+allow_dup_skey** clears this flag.
 
 {-\|+}\ **requires_preauth**
     **+requires_preauth** requires this principal to preauthenticate
@@ -325,7 +326,9 @@ Options:
 
 {-\|+}\ **allow_svr**
     **-allow_svr** prohibits the issuance of service tickets for this
-    principal.  **+allow_svr** clears this flag.
+    principal.  In release 1.17 and later, user-to-user service
+    tickets are still allowed unless the **-allow_dup_skey** flag is
+    also set.  **+allow_svr** clears this flag.
 
 {-\|+}\ **allow_tgs_req**
     **-allow_tgs_req** specifies that a Ticket-Granting Service (TGS)
@@ -661,6 +664,13 @@ KDC:
     *principal*.  The *value* is a JSON string representing an array
     of objects, each having optional ``type`` and ``username`` fields.
 
+**pkinit_cert_match**
+    Specifies a matching expression that defines the certificate
+    attributes required for the client certificate used by the
+    principal during PKINIT authentication.  The matching expression
+    is in the same format as those used by the **pkinit_cert_match**
+    option in :ref:`krb5.conf(5)`.  (New in release 1.16.)
+
 This command requires the **modify** privilege.
 
 Alias: **setstr**
@@ -989,7 +999,14 @@ The kadmin program was originally written by Tom Yu at MIT, as an
 interface to the OpenVision Kerberos administration program.
 
 
+ENVIRONMENT
+-----------
+
+See :ref:`kerberos(7)` for a description of Kerberos environment
+variables.
+
+
 SEE ALSO
 --------
 
-:ref:`kpasswd(1)`, :ref:`kadmind(8)`
+:ref:`kpasswd(1)`, :ref:`kadmind(8)`, :ref:`kerberos(7)`

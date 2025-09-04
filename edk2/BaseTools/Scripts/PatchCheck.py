@@ -1,8 +1,9 @@
 ## @file
 #  Check a patch for various format issues
 #
-#  Copyright (c) 2015 - 2020, Intel Corporation. All rights reserved.<BR>
+#  Copyright (c) 2015 - 2021, Intel Corporation. All rights reserved.<BR>
 #  Copyright (C) 2020, Red Hat, Inc.<BR>
+#  Copyright (c) 2020, ARM Ltd. All rights reserved.<BR>
 #
 #  SPDX-License-Identifier: BSD-2-Clause-Patent
 #
@@ -18,6 +19,8 @@ import os
 import re
 import subprocess
 import sys
+
+import email.header
 
 class Verbose:
     SILENT, ONELINE, NORMAL = range(3)
@@ -86,12 +89,17 @@ class EmailAddressCheck:
 class CommitMessageCheck:
     """Checks the contents of a git commit message."""
 
-    def __init__(self, subject, message):
+    def __init__(self, subject, message, author_email):
         self.ok = True
 
         if subject is None and  message is None:
             self.error('Commit message is missing!')
             return
+
+        MergifyMerge = False
+        if "mergify[bot]@users.noreply.github.com" in author_email:
+            if "Merge branch" in subject:
+                MergifyMerge = True
 
         self.subject = subject
         self.msg = message
@@ -99,9 +107,10 @@ class CommitMessageCheck:
         print (subject)
 
         self.check_contributed_under()
-        self.check_signed_off_by()
-        self.check_misc_signatures()
-        self.check_overall_format()
+        if not MergifyMerge:
+            self.check_signed_off_by()
+            self.check_misc_signatures()
+            self.check_overall_format()
         self.report_message_result()
 
     url = 'https://github.com/tianocore/tianocore.github.io/wiki/Commit-Message-Format'
@@ -265,7 +274,14 @@ class CommitMessageCheck:
         for i in range(2, count):
             if (len(lines[i]) >= 76 and
                 len(lines[i].split()) > 1 and
-                not lines[i].startswith('git-svn-id:')):
+                not lines[i].startswith('git-svn-id:') and
+                not lines[i].startswith('Reviewed-by') and
+                not lines[i].startswith('Acked-by:') and
+                not lines[i].startswith('Tested-by:') and
+                not lines[i].startswith('Reported-by:') and
+                not lines[i].startswith('Suggested-by:') and
+                not lines[i].startswith('Signed-off-by:') and
+                not lines[i].startswith('Cc:')):
                 #
                 # Print a warning if body line is longer than 75 characters
                 #
@@ -347,16 +363,23 @@ class GitDiffCheck:
                 self.is_newfile = False
                 self.force_crlf = True
                 self.force_notabs = True
-                if self.filename.endswith('.sh'):
+                if self.filename.endswith('.sh') or \
+                    self.filename.startswith('BaseTools/BinWrappers/PosixLike/') or \
+                    self.filename.startswith('BaseTools/BinPipWrappers/PosixLike/') or \
+                    self.filename.startswith('BaseTools/Bin/CYGWIN_NT-5.1-i686/') or \
+                    self.filename == 'BaseTools/BuildEnv':
                     #
                     # Do not enforce CR/LF line endings for linux shell scripts.
+                    # Some linux shell scripts don't end with the ".sh" extension,
+                    # they are identified by their path.
                     #
                     self.force_crlf = False
-                if self.filename == '.gitmodules':
+                if self.filename == '.gitmodules' or \
+                   self.filename == 'BaseTools/Conf/diff.order':
                     #
-                    # .gitmodules is updated by git and uses tabs and LF line
-                    # endings.  Do not enforce no tabs and do not enforce
-                    # CR/LF line endings.
+                    # .gitmodules and diff orderfiles are used internally by git
+                    # use tabs and LF line endings.  Do not enforce no tabs and
+                    # do not enforce CR/LF line endings.
                     #
                     self.force_crlf = False
                     self.force_notabs = False
@@ -449,7 +472,7 @@ class GitDiffCheck:
 
         stripped = line.rstrip()
 
-        if self.force_crlf and eol != '\r\n':
+        if self.force_crlf and eol != '\r\n' and (line.find('Subproject commit') == -1):
             self.added_line_error('Line ending (%s) is not CRLF' % repr(eol),
                                   line)
         if self.force_notabs and '\t' in line:
@@ -505,7 +528,7 @@ class CheckOnePatch:
         email_check = EmailAddressCheck(self.author_email, 'Author')
         email_ok = email_check.ok
 
-        msg_check = CommitMessageCheck(self.commit_subject, self.commit_msg)
+        msg_check = CommitMessageCheck(self.commit_subject, self.commit_msg, self.author_email)
         msg_ok = msg_check.ok
 
         diff_ok = True

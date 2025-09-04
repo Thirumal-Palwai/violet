@@ -1,6 +1,6 @@
 ## @ PatchFv.py
 #
-# Copyright (c) 2014 - 2019, Intel Corporation. All rights reserved.<BR>
+# Copyright (c) 2014 - 2021, Intel Corporation. All rights reserved.<BR>
 # SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 ##
@@ -163,7 +163,7 @@ class Symbols:
         # If the fvDir is not a directory, then raise an exception
         #
         if not os.path.isdir(fvDir):
-            raise Exception ("'%s' is not a valid directory!" % FvDir)
+            raise Exception ("'%s' is not a valid directory!" % fvDir)
 
         #
         # If the Guid.xref is not existing in fvDir, then raise an exception
@@ -304,10 +304,11 @@ class Symbols:
             match = re.match("^EFI_BASE_ADDRESS\s*=\s*(0x[a-fA-F0-9]+)", rptLine)
             if match is not None:
                 self.fdBase = int(match.group(1), 16) - fvOffset
+                break
             rptLine  = fdIn.readline()
         fdIn.close()
         if self.fdBase == 0xFFFFFFFF:
-            raise Exception("Could not find EFI_BASE_ADDRESS in INF file!" % fvFile)
+            raise Exception("Could not find EFI_BASE_ADDRESS in INF file!" % infFile)
         return 0
 
     #
@@ -361,9 +362,11 @@ class Symbols:
         foundModHdr = False
         while (rptLine != "" ):
             if rptLine[0] != ' ':
-                #DxeIpl (Fixed Flash Address, BaseAddress=0x00fffb4310, EntryPoint=0x00fffb4958)
-                #(GUID=86D70125-BAA3-4296-A62F-602BEBBB9081 .textbaseaddress=0x00fffb4398 .databaseaddress=0x00fffb4178)
-                match = re.match("([_a-zA-Z0-9\-]+)\s\(.+BaseAddress=(0x[0-9a-fA-F]+),\s+EntryPoint=(0x[0-9a-fA-F]+)\)", rptLine)
+                #DxeIpl (Fixed Flash Address, BaseAddress=0x00fffb4310, EntryPoint=0x00fffb4958,Type=PE)
+                match = re.match("([_a-zA-Z0-9\-]+)\s\(.+BaseAddress=(0x[0-9a-fA-F]+),\s+EntryPoint=(0x[0-9a-fA-F]+),\s*Type=\w+\)", rptLine)
+                if match is None:
+                    #DxeIpl (Fixed Flash Address, BaseAddress=0x00fffb4310, EntryPoint=0x00fffb4958)
+                    match = re.match("([_a-zA-Z0-9\-]+)\s\(.+BaseAddress=(0x[0-9a-fA-F]+),\s+EntryPoint=(0x[0-9a-fA-F]+)\)", rptLine)
                 if match is not None:
                     foundModHdr = True
                     modName = match.group(1)
@@ -371,6 +374,7 @@ class Symbols:
                        modName = self.dictGuidNameXref[modName.upper()]
                     self.dictModBase['%s:BASE'  % modName] = int (match.group(2), 16)
                     self.dictModBase['%s:ENTRY' % modName] = int (match.group(3), 16)
+                #(GUID=86D70125-BAA3-4296-A62F-602BEBBB9081 .textbaseaddress=0x00fffb4398 .databaseaddress=0x00fffb4178)
                 match = re.match("\(GUID=([A-Z0-9\-]+)\s+\.textbaseaddress=(0x[0-9a-fA-F]+)\s+\.databaseaddress=(0x[0-9a-fA-F]+)\)", rptLine)
                 if match is not None:
                     if foundModHdr:
@@ -399,6 +403,7 @@ class Symbols:
     #
     #  retval      0           Parsed MOD MAP file successfully
     #  retval      1           There is no moduleEntryPoint in modSymbols
+    #  retval      2           There is no offset for moduleEntryPoint in modSymbols
     #
     def parseModMapFile(self, moduleName, mapFile):
         #
@@ -423,7 +428,7 @@ class Symbols:
         else:
             #MSFT
             #0003:00000190       _gComBase                  00007a50     SerialPo
-            patchMapFileMatchString =  "^\s[0-9a-fA-F]{4}:[0-9a-fA-F]{8}\s+(\w+)\s+([0-9a-fA-F]{8}\s+)"
+            patchMapFileMatchString =  "^\s[0-9a-fA-F]{4}:[0-9a-fA-F]{8}\s+(\w+)\s+([0-9a-fA-F]{8,16}\s+)"
             matchKeyGroupIndex = 1
             matchSymbolGroupIndex  = 2
             prefix = ''
@@ -452,7 +457,13 @@ class Symbols:
                         continue
 
         if not moduleEntryPoint in modSymbols:
-            return 1
+            if matchSymbolGroupIndex == 2:
+                if not '_ModuleEntryPoint' in modSymbols:
+                    return 1
+                else:
+                    moduleEntryPoint = "_ModuleEntryPoint"
+            else:
+                return 1
 
         modEntry = '%s:%s' % (moduleName,moduleEntryPoint)
         if not modEntry in self.dictSymbolAddress:
@@ -495,7 +506,7 @@ class Symbols:
     #
     #  Get current character
     #
-    #  retval      elf.string[self.index]
+    #  retval      self.string[self.index]
     #  retval      ''                       Exception
     #
     def getCurr(self):

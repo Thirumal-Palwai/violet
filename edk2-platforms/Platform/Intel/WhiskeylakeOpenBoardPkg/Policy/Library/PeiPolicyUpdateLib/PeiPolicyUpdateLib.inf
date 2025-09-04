@@ -52,7 +52,6 @@
   SecurityPkg/SecurityPkg.dec
   IntelSiliconPkg/IntelSiliconPkg.dec
   MinPlatformPkg/MinPlatformPkg.dec
-  IntelSiliconPkg/IntelSiliconPkg.dec
 
 [FixedPcd]
   gSiPkgTokenSpaceGuid.PcdTsegSize                             ## CONSUMES
@@ -230,6 +229,9 @@
 
   gWhiskeylakeOpenBoardPkgTokenSpaceGuid.PcdEcPresent
 
+  # Enable/Disable USB DCI Debug
+  gWhiskeylakeOpenBoardPkgTokenSpaceGuid.PcdDciEnable                      ## CONSUMES
+
   gIntelSiliconPkgTokenSpaceGuid.PcdIntelGraphicsVbtFileGuid               ## CONSUMES
   gWhiskeylakeOpenBoardPkgTokenSpaceGuid.PcdSmbusAlertEnable               ## CONSUMES
   gWhiskeylakeOpenBoardPkgTokenSpaceGuid.PcdSataLedEnable                  ## CONSUMES
@@ -242,6 +244,7 @@
   gWhiskeylakeOpenBoardPkgTokenSpaceGuid.PcdMemoryThermalSensorGpioDPmsyncEnable  ## CONSUMES
   gEfiMdeModulePkgTokenSpaceGuid.PcdSystemFmpCapsuleImageTypeIdGuid   ## CONSUMES
   gUefiCpuPkgTokenSpaceGuid.PcdCpuMaxLogicalProcessorNumber           ## CONSUMES
+
 
 [FixedPcd]
   gMinPlatformPkgTokenSpaceGuid.PcdPlatformEfiAcpiReclaimMemorySize  ## CONSUMES
@@ -263,7 +266,6 @@
 
 [Ppis]
   gWdtPpiGuid                                   ## CONSUMES
-  gPchSpiPpiGuid                                ## CONSUMES
   gSiPolicyPpiGuid                              ## CONSUMES
   gSiPreMemPolicyPpiGuid                        ## CONSUMES
   gPeiTbtPolicyPpiGuid                          ## CONSUMES

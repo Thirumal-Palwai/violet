@@ -20,7 +20,8 @@
 
 [Packages]
   MdePkg/MdePkg.dec
-  OutOfBandManagement/IpmiFeaturePkg/IpmiFeaturePkg.dec
+  MdeModulePkg/MdeModulePkg.dec
+  IpmiFeaturePkg/IpmiFeaturePkg.dec
 
 [LibraryClasses]
   PeimEntryPoint

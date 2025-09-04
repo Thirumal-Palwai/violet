@@ -2,9 +2,27 @@
 # CI configuration for SecurityPkg
 #
 # Copyright (c) Microsoft Corporation
+# Copyright (c) 2020, Intel Corporation. All rights reserved.<BR>
 # SPDX-License-Identifier: BSD-2-Clause-Patent
 ##
 {
+    "LicenseCheck": {
+        "IgnoreFiles": []
+    },
+    "EccCheck": {
+        ## Exception sample looks like below:
+        ## "ExceptionList": [
+        ##     "<ErrorID>", "<KeyWord>"
+        ## ]
+        "ExceptionList": [
+        ],
+        ## Both file path and directory path are accepted.
+        "IgnoreFiles": [
+            "Library/TcgStorageCoreLib/TcgStorageUtil.c",
+            "Library/TcgStorageCoreLib/TcgStorageCore.c",
+            "Library/Tpm2CommandLib/Tpm2NVStorage.c"
+        ]
+    },
     "CompilerPlugin": {
         "DscPath": "SecurityPkg.dsc"
     },
@@ -16,6 +34,7 @@
             "MdePkg/MdePkg.dec",
             "MdeModulePkg/MdeModulePkg.dec",
             "SecurityPkg/SecurityPkg.dec",
+            "StandaloneMmPkg/StandaloneMmPkg.dec",
             "CryptoPkg/CryptoPkg.dec"
         ],
         # For host based unit tests

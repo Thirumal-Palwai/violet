@@ -104,6 +104,10 @@ allow_mech_by_default(gss_OID mech)
     if (status)
 	return 0;
 
+    /* If the mechanism doesn't support RFC 5587, don't exclude it. */
+    if (attrs == GSS_C_NO_OID_SET)
+	return 1;
+
     /* Check for each attribute which would cause us to exclude this mech from
      * the default credential. */
     if (generic_gss_test_oid_set_member(&minor, GSS_C_MA_DEPRECATED,
@@ -216,6 +220,8 @@ gss_cred_id_t *		d_cred;
     } else {
 	union_ctx_id = (gss_union_ctx_id_t)*context_handle;
 	selected_mech = union_ctx_id->mech_type;
+	if (union_ctx_id->internal_ctx_id == GSS_C_NO_CONTEXT)
+	    return (GSS_S_NO_CONTEXT);
     }
 
     /* Now create a new context if we didn't get one. */
@@ -234,9 +240,6 @@ gss_cred_id_t *		d_cred;
 	    free(union_ctx_id);
 	    return (status);
 	}
-
-	/* set the new context handle to caller's data */
-	*context_handle = (gss_ctx_id_t)union_ctx_id;
     }
 
     /*
@@ -277,8 +280,10 @@ gss_cred_id_t *		d_cred;
 					d_cred ? &tmp_d_cred : NULL);
 
 	    /* If there's more work to do, keep going... */
-	    if (status == GSS_S_CONTINUE_NEEDED)
+	    if (status == GSS_S_CONTINUE_NEEDED) {
+		*context_handle = (gss_ctx_id_t)union_ctx_id;
 		return GSS_S_CONTINUE_NEEDED;
+	    }
 
 	    /* if the call failed, return with failure */
 	    if (status != GSS_S_COMPLETE) {
@@ -364,14 +369,22 @@ gss_cred_id_t *		d_cred;
 		*mech_type = gssint_get_public_oid(actual_mech);
 	    if (ret_flags != NULL)
 		*ret_flags = temp_ret_flags;
-	    return	(status);
+	    *context_handle = (gss_ctx_id_t)union_ctx_id;
+	    return GSS_S_COMPLETE;
     } else {
 
 	status = GSS_S_BAD_MECH;
     }
 
 error_out:
-    if (union_ctx_id) {
+	/*
+	 * RFC 2744 5.1 requires that we not create a context on a failed first
+	 * call to accept, and recommends that on a failed subsequent call we
+	 * make the caller responsible for calling gss_delete_sec_context.
+	 * Even if the mech deleted its context, keep the union context around
+	 * for the caller to delete.
+	 */
+    if (union_ctx_id && *context_handle == GSS_C_NO_CONTEXT) {
 	if (union_ctx_id->mech_type) {
 	    if (union_ctx_id->mech_type->elements)
 		free(union_ctx_id->mech_type->elements);
@@ -384,7 +397,6 @@ error_out:
 					 GSS_C_NO_BUFFER);
 	}
 	free(union_ctx_id);
-	*context_handle = GSS_C_NO_CONTEXT;
     }
 
     if (src_name)

@@ -32,7 +32,7 @@ import tempfile
 ## Mapping Makefile type
 gMakeTypeMap = {TAB_COMPILER_MSFT:"nmake", "GCC":"gmake"}
 #
-# Regular expression for finding Include Directories, the difference between MSFT and INTEL/GCC/RVCT
+# Regular expression for finding Include Directories, the difference between MSFT and INTEL/GCC
 # is the former use /I , the Latter used -I to specify include directories
 #
 gBuildOptIncludePatternMsft = re.compile(r"(?:.*?)/I[ \t]*([^ ]*)", re.MULTILINE | re.DOTALL)
@@ -254,7 +254,6 @@ class ModuleAutoGen(AutoGen):
         self.AutoGenDepSet = set()
         self.ReferenceModules = []
         self.ConstPcd                  = {}
-        self.Makefile         = None
         self.FileDependCache  = {}
 
     def __init_platform_info__(self):
@@ -685,12 +684,12 @@ class ModuleAutoGen(AutoGen):
     @cached_property
     def BuildOptionIncPathList(self):
         #
-        # Regular expression for finding Include Directories, the difference between MSFT and INTEL/GCC/RVCT
+        # Regular expression for finding Include Directories, the difference between MSFT and INTEL/GCC
         # is the former use /I , the Latter used -I to specify include directories
         #
         if self.PlatformInfo.ToolChainFamily in (TAB_COMPILER_MSFT):
             BuildOptIncludeRegEx = gBuildOptIncludePatternMsft
-        elif self.PlatformInfo.ToolChainFamily in ('INTEL', 'GCC', 'RVCT'):
+        elif self.PlatformInfo.ToolChainFamily in ('INTEL', 'GCC'):
             BuildOptIncludeRegEx = gBuildOptIncludePatternOther
         else:
             #
@@ -705,16 +704,7 @@ class ModuleAutoGen(AutoGen):
             except KeyError:
                 FlagOption = ''
 
-            if self.ToolChainFamily != 'RVCT':
-                IncPathList = [NormPath(Path, self.Macros) for Path in BuildOptIncludeRegEx.findall(FlagOption)]
-            else:
-                #
-                # RVCT may specify a list of directory seperated by commas
-                #
-                IncPathList = []
-                for Path in BuildOptIncludeRegEx.findall(FlagOption):
-                    PathList = GetSplitList(Path, TAB_COMMA_SPLIT)
-                    IncPathList.extend(NormPath(PathEntry, self.Macros) for PathEntry in PathList)
+            IncPathList = [NormPath(Path, self.Macros) for Path in BuildOptIncludeRegEx.findall(FlagOption)]
 
             #
             # EDK II modules must not reference header files outside of the packages they depend on or
@@ -860,7 +850,8 @@ class ModuleAutoGen(AutoGen):
         SubDirectory = os.path.join(self.OutputDir, File.SubDir)
         if not os.path.exists(SubDirectory):
             CreateDirectory(SubDirectory)
-        LastTarget = None
+        TargetList = set()
+        FinalTargetName = set()
         RuleChain = set()
         SourceList = [File]
         Index = 0
@@ -870,6 +861,9 @@ class ModuleAutoGen(AutoGen):
         self.BuildOption
 
         while Index < len(SourceList):
+            # Reset the FileType if not the first iteration.
+            if Index > 0:
+                FileType = TAB_UNKNOWN_FILE
             Source = SourceList[Index]
             Index = Index + 1
 
@@ -886,29 +880,25 @@ class ModuleAutoGen(AutoGen):
             elif Source.Ext in self.BuildRules:
                 RuleObject = self.BuildRules[Source.Ext]
             else:
-                # stop at no more rules
-                if LastTarget:
-                    self._FinalBuildTargetList.add(LastTarget)
-                break
+                # No more rule to apply: Source is a final target.
+                FinalTargetName.add(Source)
+                continue
 
             FileType = RuleObject.SourceFileType
             self._FileTypes[FileType].add(Source)
 
             # stop at STATIC_LIBRARY for library
             if self.IsLibrary and FileType == TAB_STATIC_LIBRARY:
-                if LastTarget:
-                    self._FinalBuildTargetList.add(LastTarget)
-                break
+                FinalTargetName.add(Source)
+                continue
 
             Target = RuleObject.Apply(Source, self.BuildRuleOrder)
             if not Target:
-                if LastTarget:
-                    self._FinalBuildTargetList.add(LastTarget)
-                break
-            elif not Target.Outputs:
-                # Only do build for target with outputs
-                self._FinalBuildTargetList.add(Target)
+                # No Target: Source is a final target.
+                FinalTargetName.add(Source)
+                continue
 
+            TargetList.add(Target)
             self._BuildTargets[FileType].add(Target)
 
             if not Source.IsBinary and Source == File:
@@ -916,12 +906,16 @@ class ModuleAutoGen(AutoGen):
 
             # to avoid cyclic rule
             if FileType in RuleChain:
-                break
+                EdkLogger.error("build", ERROR_STATEMENT, "Cyclic dependency detected while generating rule for %s" % str(Source))
 
             RuleChain.add(FileType)
             SourceList.extend(Target.Outputs)
-            LastTarget = Target
-            FileType = TAB_UNKNOWN_FILE
+
+        # For each final target name, retrieve the corresponding TargetDescBlock instance.
+        for FTargetName in FinalTargetName:
+            for Target in TargetList:
+                if FTargetName == Target.Target:
+                    self._FinalBuildTargetList.add(Target)
 
     @cached_property
     def Targets(self):
@@ -1028,7 +1022,7 @@ class ModuleAutoGen(AutoGen):
     @cached_property
     def ModulePcdList(self):
         # apply PCD settings from platform
-        RetVal = self.PlatformInfo.ApplyPcdSetting(self.Module, self.Module.Pcds)
+        RetVal = self.PlatformInfo.ApplyPcdSetting(self, self.Module.Pcds)
 
         return RetVal
     @cached_property
@@ -1059,7 +1053,7 @@ class ModuleAutoGen(AutoGen):
                     continue
                 Pcds.add(Key)
                 PcdsInLibrary[Key] = copy.copy(Library.Pcds[Key])
-            RetVal.extend(self.PlatformInfo.ApplyPcdSetting(self.Module, PcdsInLibrary, Library=Library))
+            RetVal.extend(self.PlatformInfo.ApplyPcdSetting(self, PcdsInLibrary, Library=Library))
         return RetVal
 
     ## Get the GUID value mapping
@@ -1818,9 +1812,6 @@ class ModuleAutoGen(AutoGen):
             for LibraryAutoGen in self.LibraryAutoGenList:
                 LibraryAutoGen.CreateCodeFile()
 
-        # CanSkip uses timestamps to determine build skipping
-        if self.CanSkip():
-            return
         self.LibraryAutoGenList
         AutoGenList = []
         IgoredAutoGenList = []

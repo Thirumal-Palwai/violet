@@ -10,6 +10,20 @@
 
 #include "VarBlockService.h"
 
+#include <Protocol/ResetNotification.h>
+
+//
+// Minimum delay to enact before reset, when variables are dirty (in μs).
+// Needed to ensure that SSD-based USB 3.0 devices have time to flush their
+// write cache after updating the NV vars. A much smaller delay is applied
+// on Pi 3 compared to Pi 4, as we haven't had reports of issues there yet.
+//
+#if (RPI_MODEL == 3)
+#define PLATFORM_RESET_DELAY     500000
+#else
+#define PLATFORM_RESET_DELAY    3500000
+#endif
+
 VOID *mSFSRegistration;
 
 
@@ -39,6 +53,8 @@ InstallProtocolInterfaces (
                     &FvbDevice->FwVolBlockInstance,
                     &gEfiDevicePathProtocolGuid,
                     FvbDevice->DevicePath,
+                    &gEdkiiNvVarStoreFormattedGuid,
+                    NULL,
                     NULL
                   );
     ASSERT_EFI_ERROR (Status);
@@ -147,13 +163,12 @@ DoDump (
 
 STATIC
 VOID
-EFIAPI
 DumpVars (
-  IN EFI_EVENT Event,
-  IN VOID *Context
+  VOID
   )
 {
   EFI_STATUS Status;
+  RETURN_STATUS PcdStatus;
 
   if (mFvInstance->Device == NULL) {
     DEBUG ((DEBUG_INFO, "Variable store not found?\n"));
@@ -173,9 +188,43 @@ DumpVars (
   }
 
   DEBUG ((DEBUG_INFO, "Variables dumped!\n"));
+
+  //
+  // Add a reset delay to give time for slow/cached devices
+  // to flush the NV variables write to permanent storage.
+  // But only do so if this won't reduce an existing user-set delay.
+  //
+  if (PcdGet32 (PcdPlatformResetDelay) < PLATFORM_RESET_DELAY) {
+    PcdStatus = PcdSet32S (PcdPlatformResetDelay, PLATFORM_RESET_DELAY);
+    ASSERT_RETURN_ERROR (PcdStatus);
+  }
+
   mFvInstance->Dirty = FALSE;
 }
 
+STATIC
+VOID
+EFIAPI
+DumpVarsOnEvent (
+  IN EFI_EVENT Event,
+  IN VOID *Context
+  )
+{
+  DumpVars ();
+}
+
+STATIC
+VOID
+EFIAPI
+DumpVarsOnReset (
+  IN EFI_RESET_TYPE  ResetType,
+  IN EFI_STATUS      ResetStatus,
+  IN UINTN           DataSize,
+  IN VOID            *ResetData OPTIONAL
+  )
+{
+  DumpVars ();
+}
 
 VOID
 ReadyToBootHandler (
@@ -190,7 +239,7 @@ ReadyToBootHandler (
   Status = gBS->CreateEvent (
                   EVT_NOTIFY_SIGNAL,
                   TPL_CALLBACK,
-                  DumpVars,
+                  DumpVarsOnEvent,
                   NULL,
                   &ImageInstallEvent
                 );
@@ -203,7 +252,7 @@ ReadyToBootHandler (
                 );
   ASSERT_EFI_ERROR (Status);
 
-  DumpVars (NULL, NULL);
+  DumpVars ();
   Status = gBS->CloseEvent (Event);
   ASSERT_EFI_ERROR (Status);
 }
@@ -214,19 +263,9 @@ InstallDumpVarEventHandlers (
   VOID
   )
 {
-  EFI_STATUS Status;
-  EFI_EVENT ResetEvent;
-  EFI_EVENT ReadyToBootEvent;
-
-  Status = gBS->CreateEventEx (
-                  EVT_NOTIFY_SIGNAL,
-                  TPL_CALLBACK,
-                  DumpVars,
-                  NULL,
-                  &gRaspberryPiEventResetGuid,
-                  &ResetEvent
-                );
-  ASSERT_EFI_ERROR (Status);
+  EFI_STATUS                       Status;
+  EFI_EVENT                        ReadyToBootEvent;
+  EFI_RESET_NOTIFICATION_PROTOCOL  *ResetNotify;
 
   Status = gBS->CreateEventEx (
                   EVT_NOTIFY_SIGNAL,
@@ -237,6 +276,20 @@ InstallDumpVarEventHandlers (
                   &ReadyToBootEvent
                 );
   ASSERT_EFI_ERROR (Status);
+
+  Status = gBS->LocateProtocol (
+                  &gEfiResetNotificationProtocolGuid,
+                  NULL,
+                  (VOID **)&ResetNotify
+                  );
+  ASSERT_EFI_ERROR (Status);
+  if (!EFI_ERROR (Status)) {
+    Status = ResetNotify->RegisterResetNotify (
+                            ResetNotify,
+                            DumpVarsOnReset
+                            );
+    ASSERT_EFI_ERROR (Status);
+  }
 }
 
 

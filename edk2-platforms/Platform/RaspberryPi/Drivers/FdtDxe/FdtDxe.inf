@@ -23,6 +23,7 @@
   MdePkg/MdePkg.dec
   MdeModulePkg/MdeModulePkg.dec
   Platform/RaspberryPi/RaspberryPi.dec
+  Silicon/Broadcom/Bcm27xx/Bcm27xx.dec
 
 [LibraryClasses]
   BaseLib
@@ -35,10 +36,6 @@
 
 [Guids]
   gFdtTableGuid
-  gRaspberryPi3ModelBFdtGuid
-  gRaspberryPi3ModelBPlusFdtGuid
-  gRaspberryPi4ModelBFdtGuid
-  gRaspberryPiDefaultFdtGuid
 
 [Protocols]
   gRaspberryPiFirmwareProtocolGuid              ## CONSUMES
@@ -48,6 +45,12 @@
 
 [FixedPcd]
   gRaspberryPiTokenSpaceGuid.PcdFdtBaseAddress
+  gBcm27xxTokenSpaceGuid.PcdBcm27xxPciRegBase
+  gBcm27xxTokenSpaceGuid.PcdBcm27xxPciBusMmioAdr
+  gBcm27xxTokenSpaceGuid.PcdBcm27xxPciBusMmioLen
+  gBcm27xxTokenSpaceGuid.PcdBcm27xxPciCpuMmioAdr
+
 
 [Pcd]
-  gRaspberryPiTokenSpaceGuid.PcdOptDeviceTree
+  gRaspberryPiTokenSpaceGuid.PcdSystemTableMode
+  gRaspberryPiTokenSpaceGuid.PcdXhciReload

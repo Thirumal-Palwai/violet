@@ -1,9 +1,11 @@
-
+#!/usr/bin/env python3
+#
 # @ build_bios.py
 # Builds BIOS using configuration files and dynamically
 # imported functions from board directory
 #
-# Copyright (c) 2019 - 2020, Intel Corporation. All rights reserved.<BR>
+# Copyright (c) 2019 - 2025, Intel Corporation. All rights reserved.<BR>
+# Copyright (c) 2021, American Megatrends International LLC.<BR>
 # SPDX-License-Identifier: BSD-2-Clause-Patent
 #
 
@@ -32,10 +34,10 @@ except ImportError:
     import configparser
 
 
-def pre_build(build_config, build_type="DEBUG", silent=False, toolchain=None):
+def pre_build(build_config, build_type="DEBUG", silent=False, toolchain=None, skip_tools=False):
     """Sets the environment variables that shall be used for the build
 
-        :param build_config: The build configuration as defined in the JOSN
+        :param build_config: The build configuration as defined in the JSON
             configuration files
         :type build_config: Dictionary
         :param build_type: The build target, DEBUG, RELEASE, RELEASE_PDB,
@@ -58,7 +60,7 @@ def pre_build(build_config, build_type="DEBUG", silent=False, toolchain=None):
     # update the current config with the build config
     config.update(build_config)
 
-    # make the config and build python 2.7 compartible
+    # make the config and build python 2.7 compatible
     config = py_27_fix(config)
 
     # Set WORKSPACE environment.
@@ -107,6 +109,8 @@ def pre_build(build_config, build_type="DEBUG", silent=False, toolchain=None):
                                                config["WORKSPACE_SILICON"])
     config["WORKSPACE_FEATURES"] = os.path.join(config["WORKSPACE"],
                                                config["WORKSPACE_FEATURES"])
+    config["WORKSPACE_FEATURES_INTEL"] = os.path.join(config["WORKSPACE"],
+                                            config["WORKSPACE_FEATURES_INTEL"])
     config["WORKSPACE_DRIVERS"] = os.path.join(config["WORKSPACE"],
                                                config["WORKSPACE_DRIVERS"])
     config["WORKSPACE_PLATFORM_BIN"] = \
@@ -121,18 +125,19 @@ def pre_build(build_config, build_type="DEBUG", silent=False, toolchain=None):
     config["PACKAGES_PATH"] += os.pathsep + config["WORKSPACE_SILICON"]
     config["PACKAGES_PATH"] += os.pathsep + config["WORKSPACE_SILICON_BIN"]
     config["PACKAGES_PATH"] += os.pathsep + config["WORKSPACE_FEATURES"]
-    # add all feature domains in WORKSPACE_FEATURES to package path
-    for filename in os.listdir(config["WORKSPACE_FEATURES"]):
-        filepath = os.path.join(config["WORKSPACE_FEATURES"], filename)
+    config["PACKAGES_PATH"] += os.pathsep + config["WORKSPACE_FEATURES_INTEL"]
+    # add all feature domains in WORKSPACE_FEATURES_INTEL to package path
+    for filename in os.listdir(config["WORKSPACE_FEATURES_INTEL"]):
+        filepath = os.path.join(config["WORKSPACE_FEATURES_INTEL"], filename)
         # feature domains folder does not contain dec file
         if os.path.isdir(filepath) and \
           not glob.glob(os.path.join(filepath, "*.dec")):
             config["PACKAGES_PATH"] += os.pathsep + filepath
     config["PACKAGES_PATH"] += os.pathsep + config["WORKSPACE_DRIVERS"]
     config["PACKAGES_PATH"] += os.pathsep + \
-        os.path.join(config["WORKSPACE"], "FSP")
+        os.path.join(config["WORKSPACE"], config["WORKSPACE_FSP_BIN"])
     config["PACKAGES_PATH"] += os.pathsep + \
-        os.path.join(config["WORKSPACE"], "edk2")
+        os.path.join(config["WORKSPACE"], config["WORKSPACE_CORE"])
     config["PACKAGES_PATH"] += os.pathsep + os.path.join(config["WORKSPACE"])
     config["PACKAGES_PATH"] += os.pathsep + config["WORKSPACE_PLATFORM_BIN"]
     config["EDK_TOOLS_PATH"] = os.path.join(config["WORKSPACE"],
@@ -177,6 +182,18 @@ def pre_build(build_config, build_type="DEBUG", silent=False, toolchain=None):
         if config.get("EDK_TOOLS_BIN") is not None:
             del config["EDK_TOOLS_BIN"]
 
+    if os.name == 'nt' and toolchain is not None and \
+        toolchain.startswith ('CLANG') and 'BASETOOLS_MINGW_PATH' in config:
+        config['BASETOOLS_MINGW_BUILD'] = 'TRUE'
+        if config.get("EDK_SETUP_OPTION"):
+            config["EDK_SETUP_OPTION"] = config["EDK_SETUP_OPTION"].strip() + " " + "Mingw-w64"
+        else:
+            config["EDK_SETUP_OPTION"] = "Mingw-w64"
+        config["PATH"] = os.path.join(config["BASETOOLS_MINGW_PATH"],
+                                    "bin") + os.pathsep + config["PATH"]
+        del config["CLANG_BIN"]
+        del config["CLANG_HOST_BIN"]
+
     # Run edk setup and  update config
     if os.name == 'nt':
         edk2_setup_cmd = [os.path.join(config["EFI_SOURCE"], "edksetup"),
@@ -193,19 +210,53 @@ def pre_build(build_config, build_type="DEBUG", silent=False, toolchain=None):
         if return_code == 0 and result is not None and isinstance(result,
                                                                   dict):
             config.update(result)
+    else:
+        # UNIX environment variable setup
+        if os.environ.get("PYTHON_COMMAND") is not None:
+            config["PYTHON_COMMAND"] = os.environ.get("PYTHON_COMMAND")
+        else:
+            config["PYTHON_COMMAND"] = sys.executable
 
-    # nmake BaseTools source
+        # Add BaseTools shell wrappers to the PATH
+        config["PATH"] = os.path.join(config["BASE_TOOLS_PATH"],
+                                    "BinPipWrappers", "PosixLike") + \
+                                        os.pathsep + config["PATH"]
+
+    # Make BaseTools source
     # and enable BaseTools source build
     shell = True
     command = ["nmake", "-f", os.path.join(config["BASE_TOOLS_PATH"],
                                            "Makefile")]
+    if os.name == 'nt' and toolchain is not None and \
+        toolchain.startswith ('CLANG') and 'BASETOOLS_MINGW_PATH' in config:
+        command = ["mingw32-make", "-C", os.path.join(config["BASE_TOOLS_PATH"])]
     if os.name == "posix":  # linux
         shell = False
         command = ["make", "-C", os.path.join(config["BASE_TOOLS_PATH"])]
 
-    _, _, result, return_code = execute_script(command, config, shell=shell)
-    if return_code != 0:
-        build_failed(config)
+    if not skip_tools:
+        _, _, result, return_code = execute_script(command, config, shell=shell)
+        if return_code != 0:
+            #
+            # If the BaseTools build fails, then run a clean build and retry
+            #
+            clean_command = ["nmake", "-f",
+                            os.path.join(config["BASE_TOOLS_PATH"], "Makefile"),
+                            "clean"]
+            if os.name == 'nt' and toolchain is not None and \
+                toolchain.startswith ('CLANG') and 'BASETOOLS_MINGW_PATH' in config:
+                clean_command = ["mingw32-make", "-C",
+                                os.path.join(config["BASE_TOOLS_PATH"], "clean")]
+            if os.name == "posix":
+                clean_command = ["make", "-C",
+                                os.path.join(config["BASE_TOOLS_PATH"]), "clean"]
+            _, _, result, return_code = execute_script(clean_command, config,
+                                                    shell=shell)
+            if return_code != 0:
+                build_failed(config)
+            _, _, result, return_code = execute_script(command, config, shell=shell)
+            if return_code != 0:
+                build_failed(config)
 
     #
     # build platform silicon tools
@@ -216,6 +267,9 @@ def pre_build(build_config, build_type="DEBUG", silent=False, toolchain=None):
     config["WORKSPACE"] = os.path.join(config["WORKSPACE_SILICON"], "Tools")
 
     command = ["nmake"]
+    if os.name == 'nt' and toolchain is not None and \
+        toolchain.startswith ('CLANG') and 'BASETOOLS_MINGW_PATH' in config:
+        command = ["mingw32-make"]
     if os.name == "posix":  # linux
         command = ["make"]
         # add path to generated FitGen binary to
@@ -227,7 +281,22 @@ def pre_build(build_config, build_type="DEBUG", silent=False, toolchain=None):
     # build the silicon tools
     _, _, result, return_code = execute_script(command, config, shell=shell)
     if return_code != 0:
-        build_failed(config)
+        #
+        # If the BaseTools build fails, then run a clean build and retry
+        #
+        clean_command = ["nmake", "clean"]
+        if os.name == 'nt' and toolchain is not None and \
+            toolchain.startswith ('CLANG') and 'BASETOOLS_MINGW_PATH' in config:
+            clean_command = ["mingw32-make", "clean"]
+        if os.name == "posix":
+            clean_command = ["make", "clean"]
+        _, _, result, return_code = execute_script(clean_command, config,
+                                                shell=shell)
+        if return_code != 0:
+            build_failed(config)
+        _, _, result, return_code = execute_script(command, config, shell=shell)
+        if return_code != 0:
+            build_failed(config)
 
     # restore WORKSPACE environment variable
     config["WORKSPACE"] = saved_work_directory
@@ -339,8 +408,7 @@ def build(config):
             if re.search(pattern, item):
                 os.remove(os.path.join(file_dir, item))
 
-        command = [os.path.join(config['PYTHON_HOME'], "python"),
-                   os.path.join(config['WORKSPACE_PLATFORM'],
+        command = [sys.executable, os.path.join(config['WORKSPACE_PLATFORM'],
                                 config['PLATFORM_PACKAGE'],
                                 'Tools', 'Fsp',
                                 'RebaseFspBinBaseAddress.py'),
@@ -389,7 +457,10 @@ def build(config):
         command.append(config["REBUILD_MODE"])
 
     if config["EXT_BUILD_FLAGS"] and config["EXT_BUILD_FLAGS"] != "":
-        command.append(config["EXT_BUILD_FLAGS"])
+        ext_build_flags = config["EXT_BUILD_FLAGS"].split(" ")
+        ext_build_flags = [x.strip() for x in ext_build_flags]
+        ext_build_flags = [x for x in ext_build_flags if x != ""]
+        command.extend(ext_build_flags)
 
     if config.get('BINARY_CACHE_CMD_LINE'):
         command.append(config['HASH'])
@@ -407,6 +478,9 @@ def build(config):
     if config.get("VERBOSE", "FALSE") == "TRUE":
         command.append("--verbose")
 
+    if config.get("VERY_VERBOSE", "FALSE") == "TRUE":
+        command.append("--debug=1")
+
     if config.get("MAX_SOCKET") is not None:
         command.append("-D")
         command.append("MAX_SOCKET=" + config["MAX_SOCKET"])
@@ -415,6 +489,10 @@ def build(config):
         #Override PCD to enable API mode FSP wrapper.
         command.append("--pcd")
         command.append("gIntelFsp2WrapperTokenSpaceGuid.PcdFspModeSelection=1")
+
+    if config.get("PERFORMANCE_BUILD", "FALSE") == "TRUE":
+        command.append("--pcd")
+        command.append("gMinPlatformPkgTokenSpaceGuid.PcdPerformanceEnable=True")
 
     shell = True
     if os.name == "posix":
@@ -453,7 +531,7 @@ def post_build(config):
             shell = True
             command = ["FitGen", "-D",
                        final_fd, temp_fd, "-NA",
-                       "-I", config["BIOS_INFO_GUID"]]
+                       "-I", config["BIOS_INFO_GUID"]]   #@todo: Need mechanism to add additional options to the FitGen command line
 
             if os.name == "posix": # linux
                 shell = False
@@ -600,7 +678,7 @@ def post_build_ex(config):
 
 
 def clean_ex(config):
-    """ An extension of the platform cleanning
+    """ An extension of the platform cleaning
 
         :param config: The environment variables used in the clean process
         :type config: Dictionary
@@ -658,7 +736,7 @@ def execute_script(command, env_variables, collect_env=False,
         :type command:  List:String
         :param env_variables: Environment variables passed to the process
         :type env_variables: String
-        :param collect_env: Enables the collection of evironment variables
+        :param collect_env: Enables the collection of environment variables
             when process execution is done
         :type collect_env: Boolean
         :param enable_std_pipe: Enables process out to be piped to
@@ -705,7 +783,7 @@ def execute_script(command, env_variables, collect_env=False,
     # wait for process to be done
     execute.wait()
 
-    # if collect enviroment variables
+    # if collect environment variables
     if collect_env:
         # get the new environment variables
         std_out, env = get_environment_variables(std_out, env_marker)
@@ -713,7 +791,7 @@ def execute_script(command, env_variables, collect_env=False,
 
 
 def patch_config(config):
-    """ An extension of the platform cleanning
+    """ An extension of the platform cleaning
 
         :param config: The environment variables used in the build process
         :type config: Dictionary
@@ -877,9 +955,15 @@ def get_config():
         :returns: The config defined in the the Build.cfg file
         :rtype: Dictionary
     """
+    path = 'build.cfg'
+    if not os.path.isfile(path):
+        path = os.path.dirname(__file__)
+        path = os.path.join(path, 'build.cfg')
+        if not os.path.isfile(path):
+            raise IOError("Config file {} not found".format())
     config_file = configparser.RawConfigParser()
     config_file.optionxform = str
-    config_file.read('build.cfg')
+    config_file.read(path)
     config_dictionary = {}
     for section in config_file.sections():
         dictionary = dict(config_file.items(section))
@@ -888,7 +972,7 @@ def get_config():
 
 
 def get_platform_config(platform_name, config_data):
-    """ Reads the platform specifig config file
+    """ Reads the platform specific config file
 
         param platform_name: The name of the platform to be built
         :type platform_name: String
@@ -902,6 +986,11 @@ def get_platform_config(platform_name, config_data):
 
     platform_data = config_data.get("PLATFORMS")
     path = platform_data.get(platform_name)
+    if not os.path.isfile(path):
+        path = os.path.dirname(__file__)
+        path = os.path.join(path, platform_data.get(platform_name))
+        if not os.path.isfile(path):
+            raise IOError("Config file {} not found".format())
     config_file = configparser.RawConfigParser()
     config_file.optionxform = str
     config_file.read(path)
@@ -925,6 +1014,12 @@ def get_cmd_config_arguments(arguments):
 
     if arguments.performance is True:
         result["PERFORMANCE_BUILD"] = "TRUE"
+
+    if arguments.verbose is not None and arguments.verbose > 0:
+        result["VERBOSE"] = "TRUE"
+
+    if arguments.verbose is not None and arguments.verbose > 1:
+        result["VERY_VERBOSE"] = "TRUE"
 
     if arguments.fsp is True:
         result["FSP_WRAPPER_BUILD"] = "TRUE"
@@ -998,11 +1093,17 @@ def get_cmd_arguments(build_config):
     parser.add_argument('--list', '-l', action=PrintPlatforms,
                         help='lists available platforms', nargs=0)
 
+    parser.add_argument('--skiptools', '-s', dest='skip_tools',
+                        help='skips rebuilding base tools', action='store_true')
+
     parser.add_argument('--cleanall', dest='clean_all',
                         help='cleans all', action='store_true')
 
     parser.add_argument('--clean', dest='clean',
                         help='cleans specific platform', action='store_true')
+
+    parser.add_argument('--verbose', '-v', dest='verbose',
+                        help='Verbose build log output, specify -vv for very verbose.', action='count')
 
     parser.add_argument("--capsule", help="capsule build enabled",
                         action='store_true', dest="capsule")
@@ -1082,7 +1183,8 @@ def main():
     config = pre_build(config,
                        build_type=arguments.target,
                        toolchain=arguments.toolchain,
-                       silent=arguments.silent)
+                       silent=arguments.silent,
+                       skip_tools=arguments.skip_tools)
 
     # build selected platform
     config = build(config)

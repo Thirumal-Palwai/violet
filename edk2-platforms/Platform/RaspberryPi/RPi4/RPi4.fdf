@@ -25,11 +25,11 @@
 
 [FD.RPI_EFI]
 BaseAddress   = 0x00000000|gArmTokenSpaceGuid.PcdFdBaseAddress
-Size          = 0x001f0000|gArmTokenSpaceGuid.PcdFdSize
+Size          = 0x003e0000|gArmTokenSpaceGuid.PcdFdSize
 ErasePolarity = 1
 
 BlockSize     = 0x00001000|gRaspberryPiTokenSpaceGuid.PcdFirmwareBlockSize
-NumBlocks     = 0x1f0
+NumBlocks     = 0x3e0
 
 ################################################################################
 #
@@ -56,7 +56,7 @@ FILE = $(TFA_BUILD_BL31)
 #
 # UEFI image
 #
-0x00020000|0x001b0000
+0x00020000|0x00390000
 gArmTokenSpaceGuid.PcdFvBaseAddress|gArmTokenSpaceGuid.PcdFvSize
 FV = FVMAIN_COMPACT
 
@@ -70,7 +70,7 @@ FV = FVMAIN_COMPACT
 #
 
 # NV_VARIABLE_STORE
-0x001d0000|0x0000e000
+0x003b0000|0x0000e000
 gRaspberryPiTokenSpaceGuid.PcdNvStorageVariableBase|gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageVariableSize
 
 DATA = {
@@ -113,11 +113,11 @@ DATA = {
 }
 
 # NV_EVENT_LOG
-0x001de000|0x00001000
+0x003be000|0x00001000
 gRaspberryPiTokenSpaceGuid.PcdNvStorageEventLogBase|gRaspberryPiTokenSpaceGuid.PcdNvStorageEventLogSize
 
 # NV_FTW_WORKING header
-0x001df000|0x00001000
+0x003bf000|0x00001000
 gRaspberryPiTokenSpaceGuid.PcdNvStorageFtwWorkingBase|gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwWorkingSize
 
 DATA = {
@@ -132,8 +132,20 @@ DATA = {
 }
 
 # NV_FTW_WORKING data
-0x001e0000|0x00010000
+0x003c0000|0x00010000
 gRaspberryPiTokenSpaceGuid.PcdNvStorageFtwSpareBase|gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageFtwSpareSize
+
+# reserve some future RAM for the ACPI PCC channel structures, immediately before the DTB
+# 0x003d0000|0x00010000
+# gRaspberryPiTokenSpaceGuid.PcdPccBaseAddress|gRaspberryPiTokenSpaceGuid.PcdPccSize
+
+#
+# This is just for documentation purposes! The DTB reserved space is not part of the FD,
+# but this is exactly where it is expected to be.
+#
+# 0x003e0000|0x20000
+# gRaspberryPiTokenSpaceGuid.PcdFdtBaseAddress|gRaspberryPiTokenSpaceGuid.PcdFdtSize
+#
 
 ################################################################################
 #
@@ -181,13 +193,17 @@ READ_LOCK_STATUS   = TRUE
   INF MdeModulePkg/Universal/FaultTolerantWriteDxe/FaultTolerantWriteDxe.inf
   INF MdeModulePkg/Universal/Variable/RuntimeDxe/VariableRuntimeDxe.inf
 !if $(SECURE_BOOT_ENABLE) == TRUE
+!include ArmPlatformPkg/SecureBootDefaultKeys.fdf.inc
   INF SecurityPkg/VariableAuthenticated/SecureBootConfigDxe/SecureBootConfigDxe.inf
+  INF SecurityPkg/VariableAuthenticated/SecureBootDefaultKeysDxe/SecureBootDefaultKeysDxe.inf
 !endif
+  INF SecurityPkg/Hash2DxeCrypto/Hash2DxeCrypto.inf
   INF MdeModulePkg/Universal/MonotonicCounterRuntimeDxe/MonotonicCounterRuntimeDxe.inf
-  INF EmbeddedPkg/ResetRuntimeDxe/ResetRuntimeDxe.inf
+  INF MdeModulePkg/Universal/ResetSystemRuntimeDxe/ResetSystemRuntimeDxe.inf
   INF EmbeddedPkg/RealTimeClockRuntimeDxe/RealTimeClockRuntimeDxe.inf
   INF EmbeddedPkg/MetronomeDxe/MetronomeDxe.inf
   INF MdeModulePkg/Universal/HiiDatabaseDxe/HiiDatabaseDxe.inf
+  INF ArmPkg/Drivers/ArmPsciMpServicesDxe/ArmPsciMpServicesDxe.inf
 
   #
   # Multiple Console IO support
@@ -200,7 +216,7 @@ READ_LOCK_STATUS   = TRUE
   INF Platform/RaspberryPi/Drivers/DisplayDxe/DisplayDxe.inf
   INF EmbeddedPkg/Drivers/ConsolePrefDxe/ConsolePrefDxe.inf
 
-  INF ArmPkg/Drivers/ArmGic/ArmGicDxe.inf
+  INF ArmPkg/Drivers/ArmGicDxe/ArmGicV2Dxe.inf
   INF Platform/RaspberryPi/Drivers/RpiFirmwareDxe/RpiFirmwareDxe.inf
   INF Platform/RaspberryPi/Drivers/FdtDxe/FdtDxe.inf
   INF Platform/RaspberryPi/Drivers/ConfigDxe/ConfigDxe.inf
@@ -245,6 +261,7 @@ READ_LOCK_STATUS   = TRUE
   #
   # Bds
   #
+  INF MdeModulePkg/Universal/BootManagerPolicyDxe/BootManagerPolicyDxe.inf
   INF MdeModulePkg/Universal/DevicePathDxe/DevicePathDxe.inf
   INF MdeModulePkg/Universal/DisplayEngineDxe/DisplayEngineDxe.inf
   INF MdeModulePkg/Universal/SetupBrowserDxe/SetupBrowserDxe.inf
@@ -272,6 +289,11 @@ READ_LOCK_STATUS   = TRUE
   INF EmbeddedPkg/Drivers/NonCoherentIoMmuDxe/NonCoherentIoMmuDxe.inf
 
   #
+  # NVMe boot devices
+  #
+  INF MdeModulePkg/Bus/Pci/NvmExpressDxe/NvmExpressDxe.inf
+
+  #
   # SCSI Bus and Disk Driver
   #
   INF MdeModulePkg/Bus/Scsi/ScsiBusDxe/ScsiBusDxe.inf
@@ -285,7 +307,6 @@ READ_LOCK_STATUS   = TRUE
   INF MdeModulePkg/Bus/Usb/UsbBusDxe/UsbBusDxe.inf
   INF MdeModulePkg/Bus/Usb/UsbKbDxe/UsbKbDxe.inf
   INF MdeModulePkg/Bus/Usb/UsbMassStorageDxe/UsbMassStorageDxe.inf
-  INF Drivers/OptionRomPkg/Bus/Usb/UsbNetworking/Ax88772b/Ax88772b.inf
 
   #
   # SD/MMC support
@@ -298,14 +319,6 @@ READ_LOCK_STATUS   = TRUE
   # Pi logo (splash screen)
   #
   INF Platform/RaspberryPi/Drivers/LogoDxe/LogoDxe.inf
-
-  #
-  # Device Tree support (used by FdtDxe)
-  # GUIDs should match gRaspberryPi#####FdtGuid's from the .dec
-  #
- FILE FREEFORM = 80AB6833-CAE4-4CEE-B59D-EB2039B05551 {
-    SECTION RAW = Platform/RaspberryPi/$(PLATFORM_NAME)/DeviceTree/bcm2711-rpi-4-b.dtb
-  }
 
 [FV.FVMAIN_COMPACT]
 FvAlignment        = 16
@@ -325,7 +338,7 @@ READ_STATUS        = TRUE
 READ_LOCK_CAP      = TRUE
 READ_LOCK_STATUS   = TRUE
 
-  INF ArmPlatformPkg/PrePi/PeiUniCore.inf
+  INF ArmPlatformPkg/PeilessSec/PeilessSec.inf
   FILE FV_IMAGE = 9E21FD93-9C72-4c15-8C4B-E77F1DB2D792 {
     SECTION GUIDED EE4E5898-3914-4259-9D6E-DC7BD79403CF PROCESSING_REQUIRED = TRUE {
       SECTION FV_IMAGE = FVMAIN

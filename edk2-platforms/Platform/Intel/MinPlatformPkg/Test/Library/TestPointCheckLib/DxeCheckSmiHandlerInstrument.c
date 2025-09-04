@@ -106,7 +106,7 @@ GetSmiHandlerProfileDatabase(
   CommGetInfo->Header.ReturnStatus = (UINT64)-1;
   CommGetInfo->DataSize = 0;
 
-  CommSize = sizeof(EFI_GUID) + sizeof(UINTN) + CommHeader->MessageLength;
+  CommSize = OFFSET_OF (EFI_SMM_COMMUNICATE_HEADER, Data) + (UINTN)CommHeader->MessageLength;
   Status = SmmCommunication->Communicate(SmmCommunication, CommBuffer, &CommSize);
   if (EFI_ERROR(Status)) {
     DEBUG ((DEBUG_INFO, "SmiHandlerProfile: SmmCommunication - %r\n", Status));
@@ -139,7 +139,7 @@ GetSmiHandlerProfileDatabase(
   CommGetData->Header.DataLength = sizeof(*CommGetData);
   CommGetData->Header.ReturnStatus = (UINT64)-1;
 
-  CommSize = sizeof(EFI_GUID) + sizeof(UINTN) + CommHeader->MessageLength;
+  CommSize = OFFSET_OF (EFI_SMM_COMMUNICATE_HEADER, Data) + (UINTN)CommHeader->MessageLength;
   Buffer = (UINT8 *)CommHeader + CommSize;
   Size -= CommSize;
 
@@ -596,12 +596,12 @@ DumpSmiHandler(
         if (ImageStruct != NULL) {
           DEBUG ((DEBUG_INFO, "         <RVA>0x%x</RVA>\n", (UINTN) (SmiHandlerStruct->Handler - ImageStruct->ImageBase)));
         }
-        DEBUG ((DEBUG_INFO, "      </Handler>\n", SmiHandlerStruct->Handler));
+        DEBUG ((DEBUG_INFO, "      </Handler>\n"));
         DEBUG ((DEBUG_INFO, "      <Caller Address=\"0x%lx\">\n", SmiHandlerStruct->CallerAddr));
         if (ImageStruct != NULL) {
           DEBUG ((DEBUG_INFO, "         <RVA>0x%x</RVA>\n", (UINTN) (SmiHandlerStruct->CallerAddr - ImageStruct->ImageBase)));
         }
-        DEBUG ((DEBUG_INFO, "      </Caller>\n", SmiHandlerStruct->Handler));
+        DEBUG ((DEBUG_INFO, "      </Caller>\n"));
         SmiHandlerStruct = (VOID *)((UINTN)SmiHandlerStruct + SmiHandlerStruct->Length);
         DEBUG ((DEBUG_INFO, "    </SmiHandler>\n"));
       }

@@ -5,7 +5,7 @@
   EmbeddedPkg/Library/TemplateRealTimeClockLib/RealTimeClockLib.c
 
   Copyright (c) 2008 - 2009, Apple Inc. All rights reserved.<BR>
-  Copyright 2017 NXP
+  Copyright 2017, 2020 NXP
 
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
@@ -28,6 +28,11 @@ STATIC EFI_I2C_MASTER_PROTOCOL    *mI2cMaster;
 
 /**
   Read RTC register.
+  Data Read-Slave Transmitter Mode
+
+  <Slave Address> <Word Address (n)> <Slave Address> <Data(n)> <Data(n+1)> <Data(n+2)> <Data(n+X)>
+
+  The first byte is received and handled as in the slave receiver mode.
 
   @param  RtcRegAddr       Register offset of RTC to be read.
 
@@ -69,6 +74,9 @@ RtcRead (
 
 /**
   Write RTC register.
+  Data Write-Slave Receiver Mode
+
+  <Slave Address> <Word Address (n)> <Data(n)> <Data(n+1)> <Data(n+X)>
 
   @param  RtcRegAddr       Register offset of RTC to write.
   @param  Val              Value to be written
@@ -84,16 +92,15 @@ RtcWrite (
 {
   RTC_I2C_REQUEST          Req;
   EFI_STATUS               Status;
+  UINT8                    Buffer[2];
 
-  Req.OperationCount = 2;
+  Req.OperationCount = 1;
+  Buffer[0] = RtcRegAddr;
+  Buffer[1] = Val;
 
   Req.SetAddressOp.Flags = 0;
-  Req.SetAddressOp.LengthInBytes = sizeof (RtcRegAddr);
-  Req.SetAddressOp.Buffer = &RtcRegAddr;
-
-  Req.GetSetDateTimeOp.Flags = 0;
-  Req.GetSetDateTimeOp.LengthInBytes = sizeof (Val);
-  Req.GetSetDateTimeOp.Buffer = &Val;
+  Req.SetAddressOp.LengthInBytes = sizeof (Buffer);
+  Req.SetAddressOp.Buffer = Buffer;
 
   Status = mI2cMaster->StartRequest (mI2cMaster, FixedPcdGet8 (PcdI2cSlaveAddress),
                                      (VOID *)&Req,
@@ -282,7 +289,7 @@ I2cDriverRegistrationEvent (
     if (EFI_ERROR (Status)) {
       if (Status != EFI_NOT_FOUND) {
         DEBUG ((DEBUG_WARN, "%a: gBS->LocateHandle () returned %r\n",
-          __FUNCTION__, Status));
+          __func__, Status));
       }
       break;
     }
@@ -291,7 +298,7 @@ I2cDriverRegistrationEvent (
       continue;
     }
 
-    DEBUG ((DEBUG_INFO, "%a: found I2C master!\n", __FUNCTION__));
+    DEBUG ((DEBUG_INFO, "%a: found I2C master!\n", __func__));
 
     gBS->CloseEvent (Event);
 
@@ -303,7 +310,7 @@ I2cDriverRegistrationEvent (
     Status = I2cMaster->Reset (I2cMaster);
     if (EFI_ERROR (Status)) {
       DEBUG ((DEBUG_ERROR, "%a: I2CMaster->Reset () failed - %r\n",
-        __FUNCTION__, Status));
+        __func__, Status));
       break;
     }
 
@@ -311,7 +318,7 @@ I2cDriverRegistrationEvent (
     Status = I2cMaster->SetBusFrequency (I2cMaster, &BusFrequency);
     if (EFI_ERROR (Status)) {
       DEBUG ((DEBUG_ERROR, "%a: I2CMaster->SetBusFrequency () failed - %r\n",
-        __FUNCTION__, Status));
+        __func__, Status));
       break;
     }
 

@@ -5,18 +5,19 @@
  *  Copyright (c) 2020, Pete Batard <pete@akeo.ie>
  *  Copyright (c) 2018-2020, Andrey Warkentin <andrey.warkentin@gmail.com>
  *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Copyright (c) 2021, ARM Limited. All rights reserved.
  *
  *  SPDX-License-Identifier: BSD-2-Clause-Patent
  *
  **/
 
+#include <IndustryStandard/Bcm2711.h>
 #include <IndustryStandard/Bcm2836.h>
 #include <IndustryStandard/Bcm2836Gpio.h>
 #include <IndustryStandard/Bcm2836Gpu.h>
 #include <IndustryStandard/Bcm2836Pwm.h>
 #include <IndustryStandard/Bcm2836Sdio.h>
 #include <IndustryStandard/Bcm2836SdHost.h>
-#include <Net/Genet.h>
 
 #include "AcpiTables.h"
 
@@ -31,7 +32,11 @@
 // The ASL compiler does not support argument arithmetic in functions
 // like QWordMemory (). So we need to instantiate dummy qword regions
 // that we can then update the Min, Max and Length attributes of.
-// The two macros below help accomplish this.
+// The three macros below help accomplish this.
+//
+// QWORDMEMORYSET specifies a CPU memory range (whose base address is
+// BCM2836_SOC_REGISTERS + Offset), and QWORDBUSMEMORYSET specifies
+// a VPU memory range (whose base address is provided directly).
 //
 #define QWORDMEMORYBUF(Index)                                   \
   QWordMemory (ResourceProducer,,                               \
@@ -46,14 +51,19 @@
   Add (BCM2836_SOC_REGISTERS, Offset, MI ## Index)              \
   Add (MI ## Index, LE ## Index - 1, MA ## Index)
 
-DefinitionBlock ("Dsdt.aml", "DSDT", 5, "RPIFDN", "RPI", 2)
+#define QWORDBUSMEMORYSET(Index, Base, Length)                  \
+  CreateQwordField (RBUF, RB ## Index._MIN, MI ## Index)        \
+  CreateQwordField (RBUF, RB ## Index._MAX, MA ## Index)        \
+  CreateQwordField (RBUF, RB ## Index._LEN, LE ## Index)        \
+  Store (Base, MI ## Index)                                     \
+  Store (Length, LE ## Index)                                   \
+  Add (MI ## Index, LE ## Index - 1, MA ## Index)
+
+DefinitionBlock ("Dsdt.aml", "DSDT", 2, "RPIFDN", "RPI", 2)
 {
   Scope (\_SB_)
   {
     include ("Pep.asl")
-#if (RPI_MODEL == 4)
-    include ("Xhci.asl")
-#endif
 
     Device (CPU0)
     {
@@ -173,8 +183,8 @@ DefinitionBlock ("Dsdt.aml", "DSDT", 5, "RPIFDN", "RPI", 2)
         // PWM
         QWORDMEMORYSET(17, BCM2836_PWM_DMA_OFFSET, BCM2836_PWM_DMA_LENGTH)
         QWORDMEMORYSET(18, BCM2836_PWM_CTRL_OFFSET, BCM2836_PWM_CTRL_LENGTH)
-        QWORDMEMORYSET(19, BCM2836_PWM_BUS_BASE_ADDRESS, BCM2836_PWM_BUS_LENGTH)
-        QWORDMEMORYSET(20, BCM2836_PWM_CTRL_UNCACHED_BASE_ADDRESS, BCM2836_PWM_CTRL_UNCACHED_LENGTH)
+        QWORDBUSMEMORYSET(19, BCM2836_PWM_BUS_BASE_ADDRESS, BCM2836_PWM_BUS_LENGTH)
+        QWORDBUSMEMORYSET(20, BCM2836_PWM_CTRL_UNCACHED_BASE_ADDRESS, BCM2836_PWM_CTRL_UNCACHED_LENGTH)
         QWORDMEMORYSET(21, BCM2836_PWM_CLK_OFFSET, BCM2836_PWM_CLK_LENGTH)
 
         // UART
@@ -193,7 +203,7 @@ DefinitionBlock ("Dsdt.aml", "DSDT", 5, "RPIFDN", "RPI", 2)
         // Only the first GB is available.
         // Bus 0xC0000000 -> CPU 0x00000000.
         //
-        QWordMemory (ResourceConsumer,
+        QWordMemory (ResourceProducer,
           ,
           MinFixed,
           MaxFixed,
@@ -239,6 +249,37 @@ DefinitionBlock ("Dsdt.aml", "DSDT", 5, "RPIFDN", "RPI", 2)
           Package () { "phy-mode", "rgmii-rxid" },
         }
       })
+    }
+
+    // Define a simple thermal zone. The idea here is we compute the SOC temp
+    // via a register we can read, and give it to the OS. This enables basic
+    // reports from the "sensors" utility, and the OS can then poll and take
+    // actions if that temp exceeds any of the given thresholds.
+    Device (EC00)
+    {
+      Name (_HID, EISAID ("PNP0C06"))
+      Name (_CCA, 0x0)
+
+      // all temps in are tenths of K (aka 2732 is the min temps in Linux (aka 0C))
+      ThermalZone (TZ00) {
+        Method (_TMP, 0, Serialized) {
+          OperationRegion (TEMS, SystemMemory, THERM_SENSOR, 0x8)
+          Field (TEMS, DWordAcc, NoLock, Preserve) {
+            TMPS, 32
+          }
+          return (((410040 - ((TMPS & 0x3ff) * 487)) / 100) + 2732);
+        }
+        Method (_SCP, 3) { }               // receive cooling policy from OS
+
+        Method (_CRT) { Return (3632) }    // (90C) Critical temp point (immediate power-off)
+        Method (_HOT) { Return (3582) }    // (85C) HOT state where OS should hibernate
+        Method (_PSV) { Return (3532) }    // (80C) Passive cooling (CPU throttling) trip point
+
+        // SSDT inserts _AC0/_AL0 @60C here, if a FAN is configured
+
+        Name (_TZP, 10)                   //The OSPM must poll this device every 1 seconds
+        Name (_PSL, Package () { \_SB_.CPU0, \_SB_.CPU1, \_SB_.CPU2, \_SB_.CPU3 })
+      }
     }
 #endif
 

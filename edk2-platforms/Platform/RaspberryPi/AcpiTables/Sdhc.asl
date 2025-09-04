@@ -19,11 +19,11 @@
 // Note: UEFI can use either SDHost or Arasan. We expose both to the OS.
 //
 
-// ArasanSD 3.0 SD Host Controller.
+// ArasanSD 3.0 SD Host Controller. (brcm,bcm2835-sdhci)
 Device (SDC1)
 {
   Name (_HID, "BCM2847")
-  Name (_CID, "ARASAN")
+  Name (_CID, "BCM2847")
   Name (_UID, 0x0)
   Name (_CCA, 0x0)
   Name (_S1D, 0x1)
@@ -37,13 +37,24 @@ Device (SDC1)
   Name (RBUF, ResourceTemplate ()
   {
     MEMORY32FIXED (ReadWrite, 0, MMCHS1_LENGTH, RMEM)
-    Interrupt (ResourceConsumer, Level, ActiveHigh, Exclusive) { BCM2836_MMCHS1_INTERRUPT }
+    Interrupt (ResourceConsumer, Level, ActiveHigh, Shared) { BCM2836_MMCHS1_INTERRUPT }
   })
   Method (_CRS, 0x0, Serialized)
   {
     MEMORY32SETBASE (RBUF, RMEM, RBAS, MMCHS1_OFFSET)
     Return (^RBUF)
   }
+
+  // The standard CAPs registers on this controller
+  // appear to be 0, lets set some minimal defaults
+  // Since this cap doesn't indicate DMA capability
+  // we don't need a _DMA()
+  Name (_DSD, Package () {
+    ToUUID("daffd814-6eba-4d8c-8a91-bc9bbf4aa301"),
+    Package () {
+      Package () { "sdhci-caps", 0x0120fa81 },
+    }
+  })
 
   //
   // A child device that represents the
@@ -62,12 +73,12 @@ Device (SDC1)
   }
 }
 
-
+#if (RPI_MODEL < 4)
 // Broadcom SDHost 2.0 SD Host Controller
 Device (SDC2)
 {
   Name (_HID, "BCM2855")
-  Name (_CID, "SDHST")
+  Name (_CID, "BCM2855")
   Name (_UID, 0x0)
   Name (_CCA, 0x0)
   Name (_S1D, 0x1)
@@ -105,3 +116,4 @@ Device (SDC2)
     }
   }
 }
+#endif // !RPI4

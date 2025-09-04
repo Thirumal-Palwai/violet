@@ -1,7 +1,7 @@
 
 /*++
 
-Copyright (c)  2011  - 2019, Intel Corporation. All rights reserved
+Copyright (c)  2011  - 2020, Intel Corporation. All rights reserved
 
   SPDX-License-Identifier: BSD-2-Clause-Patent
 
@@ -499,7 +499,7 @@ SetGOPVersionCallback (
   ZeroMem (GopVersion, sizeof (GopVersion));
   Status = GetGOPDriverVersion(GopVersion);
   if(!EFI_ERROR(Status)) {
-    StrCpy((CHAR16*)&(mIgdOpRegion.OpRegion->Header.GOPV[0]), GopVersion);
+    StrCpyS ((CHAR16*)&(mIgdOpRegion.OpRegion->Header.GOPV[0]), 16, GopVersion);
     return Status;
   }
   return EFI_UNSUPPORTED;
@@ -564,7 +564,7 @@ GetVBiosVbtCallback (
         //
         // Video BIOS not found, use VBT from FV
         //
-        DEBUG ((EFI_D_ERROR, "VBT data found\n"));
+        DEBUG ((DEBUG_ERROR, "VBT data found\n"));
         (gBS->CopyMem) (
                 mIgdOpRegion.OpRegion->VBT.GVD1,
                 VbtFileBuffer,
@@ -583,7 +583,7 @@ GetVBiosVbtCallback (
     }
   }
 
-  DEBUG ((EFI_D_ERROR, "VBIOS found at 0x%X\n", VBiosPtr));
+  DEBUG ((DEBUG_ERROR, "VBIOS found at 0x%X\n", VBiosPtr));
   VBiosVbtPtr = (VBIOS_VBT_STRUCTURE *) ((UINT8 *) VBiosPtr + VBiosPtr->VbtOffset);
 
   if ((*((UINT32 *) (VBiosVbtPtr->HeaderSignature))) != VBT_SIGNATURE) {
@@ -699,7 +699,7 @@ IgdOpRegionInit (
          sizeof(gSVER)
          );
 #endif
-  DEBUG ((EFI_D_ERROR, "System BIOS ID is %a\n", mIgdOpRegion.OpRegion->Header.SVER));
+  DEBUG ((DEBUG_ERROR, "System BIOS ID is %a\n", mIgdOpRegion.OpRegion->Header.SVER));
 
 
   mIgdOpRegion.OpRegion->Header.MBOX = HEADER_MBOX_SUPPORT;

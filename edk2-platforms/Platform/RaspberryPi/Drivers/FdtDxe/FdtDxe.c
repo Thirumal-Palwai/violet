@@ -9,16 +9,16 @@
 #include <PiDxe.h>
 
 #include <Library/BaseLib.h>
+#include <Library/BaseMemoryLib.h>
 #include <Library/DebugLib.h>
 #include <Library/DxeServicesLib.h>
+#include <Library/FdtLib.h>
 #include <Library/MemoryAllocationLib.h>
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/UefiLib.h>
-#include <libfdt.h>
-
 #include <Protocol/RpiFirmware.h>
-
 #include <Guid/Fdt.h>
+#include <ConfigVars.h>
 
 STATIC VOID                             *mFdtImage;
 
@@ -42,26 +42,26 @@ FixEthernetAliases (
   //
   // Look up the 'ethernet[0]' aliases
   //
-  Aliases = fdt_path_offset (mFdtImage, "/aliases");
+  Aliases = FdtPathOffset (mFdtImage, "/aliases");
   if (Aliases < 0) {
-    DEBUG ((DEBUG_ERROR, "%a: failed to locate '/aliases'\n", __FUNCTION__));
+    DEBUG ((DEBUG_ERROR, "%a: failed to locate '/aliases'\n", __func__));
     return EFI_NOT_FOUND;
   }
-  Ethernet = fdt_getprop (mFdtImage, Aliases, "ethernet", NULL);
-  Ethernet0 = fdt_getprop (mFdtImage, Aliases, "ethernet0", NULL);
+  Ethernet = FdtGetProp (mFdtImage, Aliases, "ethernet", NULL);
+  Ethernet0 = FdtGetProp (mFdtImage, Aliases, "ethernet0", NULL);
   Alias = Ethernet ? Ethernet : Ethernet0;
   if (!Alias) {
-    DEBUG ((DEBUG_ERROR, "%a: failed to locate 'ethernet[0]' alias\n", __FUNCTION__));
+    DEBUG ((DEBUG_ERROR, "%a: failed to locate 'ethernet[0]' alias\n", __func__));
     return EFI_NOT_FOUND;
   }
 
   //
-  // Create copy for fdt_setprop
+  // Create copy for FdtSetProp
   //
   CopySize = AsciiStrSize (Alias);
   Copy = AllocateCopyPool (CopySize, Alias);
   if (!Copy) {
-    DEBUG ((DEBUG_ERROR, "%a: failed to copy '%a'\n", __FUNCTION__, Alias));
+    DEBUG ((DEBUG_ERROR, "%a: failed to copy '%a'\n", __func__, Alias));
     return EFI_OUT_OF_RESOURCES;
   }
 
@@ -70,22 +70,22 @@ FixEthernetAliases (
   //
   Status = EFI_SUCCESS;
   if (!Ethernet) {
-    Retval = fdt_setprop (mFdtImage, Aliases, "ethernet", Copy, CopySize);
+    Retval = FdtSetProp (mFdtImage, Aliases, "ethernet", Copy, CopySize);
     if (Retval != 0) {
       Status = EFI_NOT_FOUND;
       DEBUG ((DEBUG_ERROR, "%a: failed to create 'ethernet' alias (%d)\n",
-        __FUNCTION__, Retval));
+        __func__, Retval));
     }
-    DEBUG ((DEBUG_INFO, "%a: created 'ethernet' alias '%a'\n", __FUNCTION__, Copy));
+    DEBUG ((DEBUG_INFO, "%a: created 'ethernet' alias '%a'\n", __func__, Copy));
   }
   if (!Ethernet0) {
-    Retval = fdt_setprop (mFdtImage, Aliases, "ethernet0", Copy, CopySize);
+    Retval = FdtSetProp (mFdtImage, Aliases, "ethernet0", Copy, CopySize);
     if (Retval != 0) {
       Status = EFI_NOT_FOUND;
       DEBUG ((DEBUG_ERROR, "%a: failed to create 'ethernet0' alias (%d)\n",
-        __FUNCTION__, Retval));
+        __func__, Retval));
     }
-    DEBUG ((DEBUG_INFO, "%a: created 'ethernet0' alias '%a'\n", __FUNCTION__, Copy));
+    DEBUG ((DEBUG_INFO, "%a: created 'ethernet0' alias '%a'\n", __func__, Copy));
   }
 
   FreePool (Copy);
@@ -106,9 +106,9 @@ UpdateMacAddress (
   //
   // Locate the node that the 'ethernet' alias refers to
   //
-  Node = fdt_path_offset (mFdtImage, "ethernet");
+  Node = FdtPathOffset (mFdtImage, "ethernet");
   if (Node < 0) {
-    DEBUG ((DEBUG_ERROR, "%a: failed to locate 'ethernet' alias\n", __FUNCTION__));
+    DEBUG ((DEBUG_ERROR, "%a: failed to locate 'ethernet' alias\n", __func__));
     return EFI_NOT_FOUND;
   }
 
@@ -117,20 +117,20 @@ UpdateMacAddress (
   //
   Status = mFwProtocol->GetMacAddress (MacAddress);
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a: failed to retrieve MAC address\n", __FUNCTION__));
+    DEBUG ((DEBUG_ERROR, "%a: failed to retrieve MAC address\n", __func__));
     return Status;
   }
 
-  Retval = fdt_setprop (mFdtImage, Node, "mac-address", MacAddress,
+  Retval = FdtSetProp (mFdtImage, Node, "mac-address", MacAddress,
     sizeof MacAddress);
   if (Retval != 0) {
     DEBUG ((DEBUG_ERROR, "%a: failed to create 'mac-address' property (%d)\n",
-      __FUNCTION__, Retval));
+      __func__, Retval));
     return EFI_NOT_FOUND;
   }
 
   DEBUG ((DEBUG_INFO, "%a: setting MAC address to %02x:%02x:%02x:%02x:%02x:%02x\n",
-    __FUNCTION__, MacAddress[0], MacAddress[1], MacAddress[2], MacAddress[3],
+    __func__, MacAddress[0], MacAddress[1], MacAddress[2], MacAddress[3],
     MacAddress[4], MacAddress[5]));
   return EFI_SUCCESS;
 }
@@ -154,51 +154,51 @@ AddUsbCompatibleProperty (
   INTN          Retval;
 
   // Locate the node that the 'usb' alias refers to
-  Node = fdt_path_offset (mFdtImage, "usb");
+  Node = FdtPathOffset (mFdtImage, "usb");
   if (Node < 0) {
-    DEBUG ((DEBUG_ERROR, "%a: failed to locate 'usb' alias\n", __FUNCTION__));
+    DEBUG ((DEBUG_ERROR, "%a: failed to locate 'usb' alias\n", __func__));
     return EFI_NOT_FOUND;
   }
 
   // Get the property list. This is a list of NUL terminated strings.
-  List = fdt_getprop (mFdtImage, Node, "compatible", &ListSize);
+  List = FdtGetProp (mFdtImage, Node, "compatible", &ListSize);
   if (List == NULL) {
-    DEBUG ((DEBUG_ERROR, "%a: failed to locate properties\n", __FUNCTION__));
+    DEBUG ((DEBUG_ERROR, "%a: failed to locate properties\n", __func__));
     return EFI_NOT_FOUND;
   }
 
   // Check if the compatible value we plan to add is already present
-  if (fdt_stringlist_contains (List, ListSize, NewProp)) {
+  if (FdtStringListContains (List, ListSize, NewProp)) {
     DEBUG ((DEBUG_INFO, "%a: property '%a' is already set.\n",
-      __FUNCTION__, NewProp));
+      __func__, NewProp));
     return EFI_SUCCESS;
   }
 
   // Make sure the compatible device is what we expect
-  if (!fdt_stringlist_contains (List, ListSize, Prop)) {
+  if (!FdtStringListContains (List, ListSize, Prop)) {
     DEBUG ((DEBUG_ERROR, "%a: property '%a' is missing!\n",
-      __FUNCTION__, Prop));
+      __func__, Prop));
     return EFI_NOT_FOUND;
   }
 
   // Add the new NUL terminated entry to our list
   DEBUG ((DEBUG_INFO, "%a: adding '%a' to the properties\n",
-    __FUNCTION__, NewProp));
+    __func__, NewProp));
 
   NewList = AllocatePool (ListSize + sizeof (NewProp));
   if (NewList == NULL) {
-    DEBUG ((DEBUG_ERROR, "%a: failed to allocate memory\n", __FUNCTION__));
+    DEBUG ((DEBUG_ERROR, "%a: failed to allocate memory\n", __func__));
     return EFI_OUT_OF_RESOURCES;;
   }
   CopyMem (NewList, List, ListSize);
   CopyMem (&NewList[ListSize], NewProp, sizeof (NewProp));
 
-  Retval = fdt_setprop (mFdtImage, Node, "compatible", NewList,
+  Retval = FdtSetProp (mFdtImage, Node, "compatible", NewList,
              ListSize + sizeof (NewProp));
   FreePool (NewList);
   if (Retval != 0) {
     DEBUG ((DEBUG_ERROR, "%a: failed to update properties (%d)\n",
-      __FUNCTION__, Retval));
+      __func__, Retval));
     return EFI_NOT_FOUND;
   }
 
@@ -214,7 +214,7 @@ CleanMemoryNodes (
   INTN Node;
   INT32 Retval;
 
-  Node = fdt_path_offset (mFdtImage, "/memory");
+  Node = FdtPathOffset (mFdtImage, "/memory");
   if (Node < 0) {
     return EFI_SUCCESS;
   }
@@ -224,7 +224,7 @@ CleanMemoryNodes (
    * OS go crazy and ignore the UEFI map.
    */
   DEBUG ((DEBUG_INFO, "Removing bogus /memory\n"));
-  Retval = fdt_del_node (mFdtImage, Node);
+  Retval = FdtDelNode (mFdtImage, Node);
   if (Retval != 0) {
     DEBUG ((DEBUG_ERROR, "Failed to remove /memory\n"));
     return EFI_NOT_FOUND;
@@ -243,15 +243,15 @@ SanitizePSCI (
   INTN Root;
   INT32 Retval;
 
-  Root = fdt_path_offset (mFdtImage, "/");
+  Root = FdtPathOffset (mFdtImage, "/");
   ASSERT (Root >= 0);
   if (Root < 0) {
     return EFI_NOT_FOUND;
   }
 
-  Node = fdt_path_offset (mFdtImage, "/psci");
+  Node = FdtPathOffset (mFdtImage, "/psci");
   if (Node < 0) {
-    Node = fdt_add_subnode (mFdtImage, Root, "psci");
+    Node = FdtAddSubnode (mFdtImage, Root, "psci");
   }
 
   ASSERT (Node >= 0);
@@ -260,33 +260,33 @@ SanitizePSCI (
     return EFI_NOT_FOUND;
   }
 
-  Retval = fdt_setprop_string (mFdtImage, Node, "compatible", "arm,psci-1.0");
+  Retval = FdtSetPropString (mFdtImage, Node, "compatible", "arm,psci-1.0");
   if (Retval != 0) {
     DEBUG ((DEBUG_ERROR, "Couldn't set /psci compatible property\n"));
     return EFI_NOT_FOUND;
   }
 
-  Retval = fdt_setprop_string (mFdtImage, Node, "method", "smc");
+  Retval = FdtSetPropString (mFdtImage, Node, "method", "smc");
   if (Retval != 0) {
     DEBUG ((DEBUG_ERROR, "Couldn't set /psci method property\n"));
     return EFI_NOT_FOUND;
   }
 
-  Root = fdt_path_offset (mFdtImage, "/cpus");
+  Root = FdtPathOffset (mFdtImage, "/cpus");
   if (Root < 0) {
     DEBUG ((DEBUG_ERROR, "No CPUs to update with PSCI enable-method?\n"));
     return EFI_NOT_FOUND;
   }
 
-  Node = fdt_first_subnode (mFdtImage, Root);
+  Node = FdtFirstSubnode (mFdtImage, Root);
   while (Node >= 0) {
-    if (fdt_setprop_string (mFdtImage, Node, "enable-method", "psci") != 0) {
+    if (FdtSetPropString (mFdtImage, Node, "enable-method", "psci") != 0) {
       DEBUG ((DEBUG_ERROR, "Failed to update enable-method for a CPU\n"));
       return EFI_NOT_FOUND;
     }
 
-    fdt_delprop (mFdtImage, Node, "cpu-release-addr");
-    Node = fdt_next_subnode (mFdtImage, Node);
+    FdtDelProp (mFdtImage, Node, "cpu-release-addr");
+    Node = FdtNextSubnode (mFdtImage, Node);
   }
   return EFI_SUCCESS;
 }
@@ -304,7 +304,7 @@ CleanSimpleFramebuffer (
    * Should look for nodes by kind and remove aliases
    * by matching against device.
    */
-  Node = fdt_path_offset (mFdtImage, "display0");
+  Node = FdtPathOffset (mFdtImage, "display0");
   if (Node < 0) {
     return EFI_SUCCESS;
   }
@@ -314,19 +314,19 @@ CleanSimpleFramebuffer (
    * doesn't reflect the framebuffer built by UEFI.
    */
   DEBUG ((DEBUG_INFO, "Removing bogus display0\n"));
-  Retval = fdt_del_node (mFdtImage, Node);
+  Retval = FdtDelNode (mFdtImage, Node);
   if (Retval != 0) {
     DEBUG ((DEBUG_ERROR, "Failed to remove display0\n"));
     return EFI_NOT_FOUND;
   }
 
-  Node = fdt_path_offset (mFdtImage, "/aliases");
+  Node = FdtPathOffset (mFdtImage, "/aliases");
   if (Node < 0) {
     DEBUG ((DEBUG_ERROR, "Couldn't find /aliases to remove display0\n"));
     return EFI_NOT_FOUND;
   }
 
-  Retval = fdt_delprop (mFdtImage, Node, "display0");
+  Retval = FdtDelProp (mFdtImage, Node, "display0");
   if (Retval != 0) {
     DEBUG ((DEBUG_ERROR, "Failed to remove display0 alias\n"));
     return EFI_NOT_FOUND;
@@ -335,89 +335,101 @@ CleanSimpleFramebuffer (
   return EFI_SUCCESS;
 }
 
-#define MAX_CMDLINE_SIZE    512
-
 STATIC
 EFI_STATUS
-UpdateBootArgs (
+SyncPcie (
   VOID
   )
 {
+#if (RPI_MODEL == 4)
   INTN          Node;
   INTN          Retval;
-  EFI_STATUS    Status;
-  CHAR8         *CommandLine;
+  UINT32        DmaRanges[7];
 
-  //
-  // Locate the /chosen node
-  //
-  Node = fdt_path_offset (mFdtImage, "/chosen");
+  Node = FdtPathOffset (mFdtImage, "pcie0");
   if (Node < 0) {
-    DEBUG ((DEBUG_ERROR, "%a: failed to locate /chosen node\n", __FUNCTION__));
+    DEBUG ((DEBUG_ERROR, "%a: failed to locate 'pcie0' alias\n", __func__));
     return EFI_NOT_FOUND;
   }
 
-  //
-  // If /chosen/bootargs already exists, we want to add a space character
-  // before adding the firmware supplied arguments. However, the RpiFirmware
-  // protocol expects a 32-bit aligned buffer. So let's allocate 4 bytes of
-  // slack, and skip the first 3 when passing this buffer into libfdt.
-  //
-  CommandLine = AllocatePool (MAX_CMDLINE_SIZE) + 4;
-  if (!CommandLine) {
-    DEBUG ((DEBUG_ERROR, "%a: failed to allocate memory\n", __FUNCTION__));
-    return EFI_OUT_OF_RESOURCES;
+  // non translated 32-bit DMA window with a limit of 0xc0000000
+  DmaRanges[0] = CpuToFdt32 (0x02000000);
+  DmaRanges[1] = CpuToFdt32 (0x00000000);
+  DmaRanges[2] = CpuToFdt32 (0x00000000);
+  DmaRanges[3] = CpuToFdt32 (0x00000000);
+  DmaRanges[4] = CpuToFdt32 (0x00000000);
+  DmaRanges[5] = CpuToFdt32 (0x00000000);
+  DmaRanges[6] = CpuToFdt32 (0xc0000000);
+
+  DEBUG ((DEBUG_INFO, "%a: Updating PCIe dma-ranges\n",  __func__));
+
+  /*
+   * Match dma-ranges with the EDK2+ACPI setup we are using.  This works
+   * around a failure in Linux and OpenBSD to reset the PCIe/XHCI correctly
+   * when in DT mode.
+   */
+  Retval = FdtSetProp (mFdtImage, Node, "dma-ranges",
+                        DmaRanges,  sizeof DmaRanges);
+  if (Retval != 0) {
+    DEBUG ((DEBUG_ERROR, "%a: failed to locate PCIe 'dma-ranges' property (%d)\n",
+      __func__, Retval));
+    return EFI_NOT_FOUND;
   }
 
-  //
-  // Get the command line from the firmware
-  //
-  Status = mFwProtocol->GetCommandLine (MAX_CMDLINE_SIZE, CommandLine + 4);
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "%a: failed to retrieve command line\n", __FUNCTION__));
-    return Status;
+  // move the MMIO window too
+  DmaRanges[0] = CpuToFdt32 (0x02000000); // non prefetchable 32-bit
+  DmaRanges[1] = CpuToFdt32 (FixedPcdGet64 (PcdBcm27xxPciBusMmioAdr) >> 32); // bus addr @ 0x0f8000000
+  DmaRanges[2] = CpuToFdt32 (FixedPcdGet64 (PcdBcm27xxPciBusMmioAdr) & MAX_UINT32);
+  DmaRanges[3] = CpuToFdt32 (FixedPcdGet64 (PcdBcm27xxPciCpuMmioAdr) >> 32); // cpu addr @ 0x600000000
+  DmaRanges[4] = CpuToFdt32 (FixedPcdGet64 (PcdBcm27xxPciCpuMmioAdr) & MAX_UINT32);
+  DmaRanges[5] = CpuToFdt32 (0x00000000);
+  DmaRanges[6] = CpuToFdt32 (FixedPcdGet32 (PcdBcm27xxPciBusMmioLen) + 1); // len = 0x4000 0000
+
+  DEBUG ((DEBUG_INFO, "%a: Updating PCIe ranges\n",  __func__));
+
+  /*
+   * Match ranges (BAR/MMIO) with the EDK2+ACPI setup we are using.
+   */
+  Retval = FdtSetProp (mFdtImage, Node, "ranges",
+                        DmaRanges,  sizeof DmaRanges);
+  if (Retval != 0) {
+    DEBUG ((DEBUG_ERROR, "%a: failed to locate PCIe MMIO 'ranges' property (%d)\n",
+      __func__, Retval));
+    return EFI_NOT_FOUND;
   }
 
-  if (AsciiStrLen (CommandLine + 4) == 0) {
-    DEBUG ((DEBUG_INFO, "%a: empty command line received\n", __FUNCTION__));
+  if (PcdGet32 (PcdXhciReload) != 1) {
     return EFI_SUCCESS;
   }
 
-  CommandLine[3] = ' ';
+  /*
+   * Now that we are always running without DMA translation, and with a 3G
+   * limit, there shouldn't be a need to reset/reload the XHCI. The
+   * possible problem is that the PCIe root port is itself being reset (by
+   * Linux+DT). The RPi foundation claims this is needed as a pre-req to
+   * reloading the XHCI firmware, which also implies that a PCI fundamental
+   * reset should cause the XHCI itself to reset.  This isn't happening
+   * fully, otherwise reloading the firmware would be mandatory. As it is,
+   * recent kernels actually start to have problems following the XHCI
+   * reset notification mailbox!  Instead lets stop the kernel from
+   * triggering the mailbox by removing the node.
+   */
 
-  Retval = fdt_appendprop_string (mFdtImage, Node, "bootargs", &CommandLine[3]);
-  if (Retval != 0) {
-    DEBUG ((DEBUG_ERROR, "%a: failed to set /chosen/bootargs property (%d)\n",
-      __FUNCTION__, Retval));
+  Node = FdtPathOffset (mFdtImage, "/scb/pcie@7d500000/pci");
+  if (Node < 0) {
+    // This can happen on CM4/etc which doesn't have an onboard XHCI
+    DEBUG ((DEBUG_INFO, "%a: failed to locate /scb/pcie@7d500000/pci\n", __func__));
+  } else {
+    Retval = FdtDelNode (mFdtImage, Node);
+    if (Retval != 0) {
+      DEBUG ((DEBUG_ERROR, "Failed to remove /scb/pcie@7d500000/pci\n"));
+      return EFI_NOT_FOUND;
+    }
   }
 
-  DEBUG_CODE_BEGIN ();
-    CONST CHAR8    *Prop;
-    INT32         Length;
-    INT32         Index;
-
-    Node = fdt_path_offset (mFdtImage, "/chosen");
-    ASSERT (Node >= 0);
-
-    Prop = fdt_getprop (mFdtImage, Node, "bootargs", &Length);
-    ASSERT (Prop != NULL);
-
-    DEBUG ((DEBUG_INFO, "Command line set from firmware (length %d):\n'", Length));
-
-    for (Index = 0; Index < Length; Index++, Prop++) {
-      if (*Prop == '\0') {
-        continue;
-      }
-      DEBUG ((DEBUG_INFO, "%c", *Prop));
-    }
-
-    DEBUG ((DEBUG_INFO, "'\n"));
-  DEBUG_CODE_END ();
-
-  FreePool (CommandLine - 4);
+#endif
   return EFI_SUCCESS;
 }
-
 
 /**
   @param  ImageHandle   of the loaded driver
@@ -435,15 +447,13 @@ FdtDxeInitialize (
   IN EFI_SYSTEM_TABLE   *SystemTable
   )
 {
-  EFI_STATUS Status;
-  EFI_GUID   *FdtGuid;
-  VOID       *FdtImage;
-  UINTN      FdtSize;
   INT32      Retval;
-  UINT32     BoardRevision;
-  BOOLEAN    Internal;
+  EFI_STATUS Status;
+  UINTN      FdtSize;
+  VOID       *FdtImage = NULL;
 
-  if (PcdGet32 (PcdOptDeviceTree) == 0) {
+  if (PcdGet32 (PcdSystemTableMode) != SYSTEM_TABLE_MODE_BOTH &&
+      PcdGet32 (PcdSystemTableMode) != SYSTEM_TABLE_MODE_DT) {
     DEBUG ((DEBUG_INFO, "Device Tree disabled per user configuration\n"));
     return EFI_SUCCESS;
   }
@@ -452,75 +462,20 @@ FdtDxeInitialize (
                   (VOID**)&mFwProtocol);
   ASSERT_EFI_ERROR (Status);
 
-  Internal = FALSE;
   FdtImage = (VOID*)(UINTN)PcdGet32 (PcdFdtBaseAddress);
-  Retval = fdt_check_header (FdtImage);
-  if (Retval == 0) {
+  Retval = FdtCheckHeader (FdtImage);
+  if (Retval != 0) {
     /*
-     * Have FDT passed via config.txt.
+     * Any one of:
+     * - Invalid config.txt device_tree_address (not PcdFdtBaseAddress)
+     * - Missing FDT for your Pi variant (if not overriding via device_tree=)
      */
-    FdtSize = fdt_totalsize (FdtImage);
-    DEBUG ((DEBUG_INFO, "Device Tree passed via config.txt (0x%lx bytes)\n", FdtSize));
-    Status = EFI_SUCCESS;
-  } else {
-    /*
-     * Use one of the embedded FDT's.
-     */
-    Internal = TRUE;
-    DEBUG ((DEBUG_INFO, "No/Bad Device Tree found at address 0x%p (%a), "
-      "looking up internal one...\n", FdtImage, fdt_strerror (Retval)));
-    /*
-     * Query the board revision to differentiate between models.
-     */
-    Status = mFwProtocol->GetModelRevision (&BoardRevision);
-    if (EFI_ERROR (Status)) {
-      DEBUG ((DEBUG_ERROR, "Failed to get board type: %r\n", Status));
-      DEBUG ((DEBUG_INFO, "Using default internal Device Tree\n"));
-      FdtGuid = &gRaspberryPiDefaultFdtGuid;
-    } else {
-      // www.raspberrypi.org/documentation/hardware/raspberrypi/revision-codes/README.md
-      switch ((BoardRevision >> 4) & 0xFF) {
-      case 0x08:
-        DEBUG ((DEBUG_INFO, "Using Raspberry Pi 3 Model B internal Device Tree\n"));
-        FdtGuid = &gRaspberryPi3ModelBFdtGuid;
-        break;
-      case 0x0D:
-        DEBUG ((DEBUG_INFO, "Using Raspberry Pi 3 Model B+ internal Device Tree\n"));
-        FdtGuid = &gRaspberryPi3ModelBPlusFdtGuid;
-        break;
-      case 0x11:
-        DEBUG ((DEBUG_INFO, "Using Raspberry Pi 4 Model B internal Device Tree\n"));
-        FdtGuid = &gRaspberryPi4ModelBFdtGuid;
-        break;
-      default:
-        DEBUG ((DEBUG_INFO, "Using default internal Device Tree\n"));
-        FdtGuid = &gRaspberryPiDefaultFdtGuid;
-        break;
-      }
-    }
-    do {
-      Status = GetSectionFromAnyFv (FdtGuid, EFI_SECTION_RAW, 0, &FdtImage, &FdtSize);
-      if (Status == EFI_SUCCESS) {
-        if (fdt_check_header (FdtImage) != 0) {
-          Status = EFI_INCOMPATIBLE_VERSION;
-        }
-      }
-      // No retry needed if we are successful or are dealing with the default Fdt.
-      if ( (Status == EFI_SUCCESS) ||
-           (CompareGuid (FdtGuid, &gRaspberryPiDefaultFdtGuid)) )
-        break;
-      // Otherwise, try one more time with the default Fdt. An example of this
-      // is if we detected a non-default Fdt, that isn't included in the FDF.
-      DEBUG ((DEBUG_INFO, "Internal Device Tree was not found for this platform, "
-        "falling back to default...\n"));
-      FdtGuid = &gRaspberryPiDefaultFdtGuid;
-    } while (1);
+    DEBUG ((DEBUG_ERROR, "No devicetree passed via config.txt\n"));
+    return EFI_NOT_FOUND;
   }
 
-  if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "Failed to locate Device Tree: %r\n", Status));
-    return Status;
-  }
+  FdtSize = FdtTotalSize (FdtImage);
+  DEBUG ((DEBUG_INFO, "Devicetree passed via config.txt (0x%lx bytes)\n", FdtSize));
 
   /*
    * Probably overkill.
@@ -529,12 +484,19 @@ FdtDxeInitialize (
   Status = gBS->AllocatePages (AllocateAnyPages, EfiBootServicesData,
                   EFI_SIZE_TO_PAGES (FdtSize), (EFI_PHYSICAL_ADDRESS*)&mFdtImage);
   if (EFI_ERROR (Status)) {
-    DEBUG ((DEBUG_ERROR, "Failed to allocate Device Tree: %r\n", Status));
-    return Status;
+    DEBUG ((DEBUG_ERROR, "Failed to allocate devicetree: %r\n", Status));
+    goto out;
   }
 
-  Retval = fdt_open_into (FdtImage, mFdtImage, FdtSize);
-  ASSERT (Retval == 0);
+  Retval = FdtOpenInto (FdtImage, mFdtImage, FdtSize);
+  if (Retval != 0) {
+     DEBUG ((DEBUG_ERROR, "FdtOpenInto failed: %d\n", Retval));
+     goto out;
+  }
+
+  /*
+   * These are all best-effort.
+   */
 
   Status = SanitizePSCI ();
   if (EFI_ERROR (Status)) {
@@ -566,19 +528,23 @@ FdtDxeInitialize (
     Print (L"Failed to update USB compatible properties: %r\n", Status);
   }
 
-  if (Internal) {
-    /*
-     * A GPU-provided DTB already has the full command line.
-     */
-    Status = UpdateBootArgs ();
-    if (EFI_ERROR (Status)) {
-      Print (L"Failed to update boot arguments: %r\n", Status);
-    }
+  SyncPcie ();
+  if (EFI_ERROR (Status)) {
+    Print (L"Failed to update PCIe address ranges: %r\n", Status);
   }
 
-  DEBUG ((DEBUG_INFO, "Installed Device Tree at address 0x%p\n", mFdtImage));
+  DEBUG ((DEBUG_INFO, "Installed devicetree at address %p\n", mFdtImage));
   Status = gBS->InstallConfigurationTable (&gFdtTableGuid, mFdtImage);
-  ASSERT_EFI_ERROR (Status);
+  if (EFI_ERROR (Status)) {
+     DEBUG ((DEBUG_ERROR, "Couldn't register devicetree: %r\n", Status));
+     goto out;
+  }
 
+out:
+  if (EFI_ERROR(Status)) {
+    if (mFdtImage != NULL) {
+      gBS->FreePages ((EFI_PHYSICAL_ADDRESS) mFdtImage, EFI_SIZE_TO_PAGES (FdtSize));
+    }
+  }
   return Status;
 }

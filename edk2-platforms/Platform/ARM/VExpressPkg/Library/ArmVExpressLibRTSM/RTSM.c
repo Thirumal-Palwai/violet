@@ -15,23 +15,10 @@
 
 #include <ArmPlatform.h>
 
-/**
-  Return the core per cluster. The method may differ per core type
-
-  This function might be called from assembler before any stack is set.
-
-  @return   Return the core count per cluster
-
-**/
-UINTN
-ArmGetCpuCountPerCluster (
-  VOID
-  );
-
 ARM_CORE_INFO mVersatileExpressMpCoreInfoTable[] = {
   {
     // Cluster 0, Core 0
-    0x0, 0x0,
+    0x000,
 
     // MP Core MailBox Set/Get/Clear Addresses and Clear Value
     (EFI_PHYSICAL_ADDRESS)ARM_VE_SYS_FLAGS_REG,
@@ -41,7 +28,7 @@ ARM_CORE_INFO mVersatileExpressMpCoreInfoTable[] = {
   },
   {
     // Cluster 0, Core 1
-    0x0, 0x1,
+    0x001,
 
     // MP Core MailBox Set/Get/Clear Addresses and Clear Value
     (EFI_PHYSICAL_ADDRESS)ARM_VE_SYS_FLAGS_REG,
@@ -51,7 +38,7 @@ ARM_CORE_INFO mVersatileExpressMpCoreInfoTable[] = {
   },
   {
     // Cluster 0, Core 2
-    0x0, 0x2,
+    0x002,
 
     // MP Core MailBox Set/Get/Clear Addresses and Clear Value
     (EFI_PHYSICAL_ADDRESS)ARM_VE_SYS_FLAGS_REG,
@@ -61,7 +48,7 @@ ARM_CORE_INFO mVersatileExpressMpCoreInfoTable[] = {
   },
   {
     // Cluster 0, Core 3
-    0x0, 0x3,
+    0x003,
 
     // MP Core MailBox Set/Get/Clear Addresses and Clear Value
     (EFI_PHYSICAL_ADDRESS)ARM_VE_SYS_FLAGS_REG,
@@ -71,7 +58,7 @@ ARM_CORE_INFO mVersatileExpressMpCoreInfoTable[] = {
   },
   {
     // Cluster 1, Core 0
-    0x1, 0x0,
+    0x100,
 
     // MP Core MailBox Set/Get/Clear Addresses and Clear Value
     (EFI_PHYSICAL_ADDRESS)ARM_VE_SYS_FLAGS_REG,
@@ -81,7 +68,7 @@ ARM_CORE_INFO mVersatileExpressMpCoreInfoTable[] = {
   },
   {
     // Cluster 1, Core 1
-    0x1, 0x1,
+    0x101,
 
     // MP Core MailBox Set/Get/Clear Addresses and Clear Value
     (EFI_PHYSICAL_ADDRESS)ARM_VE_SYS_FLAGS_REG,
@@ -91,7 +78,7 @@ ARM_CORE_INFO mVersatileExpressMpCoreInfoTable[] = {
   },
   {
     // Cluster 1, Core 2
-    0x1, 0x2,
+    0x102,
 
     // MP Core MailBox Set/Get/Clear Addresses and Clear Value
     (EFI_PHYSICAL_ADDRESS)ARM_VE_SYS_FLAGS_REG,
@@ -101,7 +88,7 @@ ARM_CORE_INFO mVersatileExpressMpCoreInfoTable[] = {
   },
   {
     // Cluster 1, Core 3
-    0x1, 0x3,
+    0x103,
 
     // MP Core MailBox Set/Get/Clear Addresses and Clear Value
     (EFI_PHYSICAL_ADDRESS)ARM_VE_SYS_FLAGS_REG,
@@ -139,10 +126,6 @@ ArmPlatformInitialize (
   IN  UINTN                     MpId
   )
 {
-  if (!ArmPlatformIsPrimaryCore (MpId)) {
-    return RETURN_SUCCESS;
-  }
-
   // Disable memory remapping and return to normal mapping
   MmioOr32 (SP810_CTRL_BASE, BIT8);
 
@@ -160,7 +143,7 @@ PrePeiCoreGetMpCoreInfo (
   ProcType = MmioRead32 (ARM_VE_SYS_PROCID0_REG) & ARM_VE_SYS_PROC_ID_MASK;
   if ((ProcType == ARM_VE_SYS_PROC_ID_CORTEX_A9) || (ProcType == ARM_VE_SYS_PROC_ID_CORTEX_A15)) {
     // Only support one cluster on all but ARMv8 FVP platform. FVP still uses CortexA9 ID.
-    *CoreCount    = ArmGetCpuCountPerCluster ();
+    *CoreCount    = FixedPcdGet32 (PcdCoreCount);
     *ArmCoreTable = mVersatileExpressMpCoreInfoTable;
     return EFI_SUCCESS;
   } else {

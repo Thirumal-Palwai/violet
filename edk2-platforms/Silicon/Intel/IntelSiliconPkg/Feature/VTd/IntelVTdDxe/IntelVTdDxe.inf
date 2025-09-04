@@ -70,10 +70,12 @@
   gEfiPciIoProtocolGuid                       ## CONSUMES
   gEfiPciEnumerationCompleteProtocolGuid      ## CONSUMES
   gEdkiiPlatformVTdPolicyProtocolGuid         ## SOMETIMES_CONSUMES
+  gEfiPciRootBridgeIoProtocolGuid             ## CONSUMES
 
 [Pcd]
   gIntelSiliconPkgTokenSpaceGuid.PcdVTdPolicyPropertyMask   ## CONSUMES
   gIntelSiliconPkgTokenSpaceGuid.PcdErrorCodeVTdError       ## CONSUMES
+  gIntelSiliconPkgTokenSpaceGuid.PcdVTdSupportAbortDmaMode  ## CONSUMES
 
 [Depex]
   gEfiPciRootBridgeIoProtocolGuid

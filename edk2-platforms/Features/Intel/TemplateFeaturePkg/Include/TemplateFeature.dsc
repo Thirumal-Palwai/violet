@@ -68,12 +68,9 @@
 #
 # Feature PEI Components
 #
-
-# @todo: Change below line to [Components.$(PEI_ARCH)] after https://bugzilla.tianocore.org/show_bug.cgi?id=2308
-#        is completed.
-[Components.IA32]
+[Components.$(PEI_ARCH)]
   #####################################
-  # <TEMPALTE> Feature Package
+  # <TEMPLATE> Feature Package
   #####################################
 
   # Add library instances here that are not included in package components and should be tested
@@ -84,10 +81,7 @@
 #
 # Feature DXE Components
 #
-
-# @todo: Change below line to [Components.$(DXE_ARCH)] after https://bugzilla.tianocore.org/show_bug.cgi?id=2308
-#        is completed.
-[Components.X64]
+[Components.$(DXE_ARCH)]
   #####################################
   # <TEMPLATE> Feature Package
   #####################################

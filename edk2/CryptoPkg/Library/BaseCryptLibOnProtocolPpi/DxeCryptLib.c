@@ -32,6 +32,15 @@ GetCryptoServices (
   return (VOID *)mCryptoProtocol;
 }
 
+/**
+  Locate the valid Crypto Protocol.
+
+  @param  ImageHandle   The firmware allocated handle for the EFI image.
+  @param  SystemTable   A pointer to the EFI System Table.
+
+  @retval EFI_SUCCESS   The constructor executed correctly.
+  @retval EFI_NOT_FOUND Found no valid Crypto Protocol.
+**/
 EFI_STATUS
 EFIAPI
 DxeCryptLibConstructor (
@@ -48,8 +57,8 @@ DxeCryptLibConstructor (
                   (VOID **)&mCryptoProtocol
                   );
 
-  if (EFI_ERROR (Status) || mCryptoProtocol == NULL) {
-    DEBUG((DEBUG_ERROR, "[DxeCryptLib] Failed to locate Crypto Protocol. Status = %r\n", Status));
+  if (EFI_ERROR (Status) || (mCryptoProtocol == NULL)) {
+    DEBUG ((DEBUG_ERROR, "[DxeCryptLib] Failed to locate Crypto Protocol. Status = %r\n", Status));
     ASSERT_EFI_ERROR (Status);
     ASSERT (mCryptoProtocol != NULL);
     mCryptoProtocol = NULL;
@@ -58,7 +67,7 @@ DxeCryptLibConstructor (
 
   Version = mCryptoProtocol->GetVersion ();
   if (Version < EDKII_CRYPTO_VERSION) {
-    DEBUG((DEBUG_ERROR, "[DxeCryptLib] Crypto Protocol unsupported version %d\n", Version));
+    DEBUG ((DEBUG_ERROR, "[DxeCryptLib] Crypto Protocol unsupported version %d\n", Version));
     ASSERT (Version >= EDKII_CRYPTO_VERSION);
     mCryptoProtocol = NULL;
     return EFI_NOT_FOUND;

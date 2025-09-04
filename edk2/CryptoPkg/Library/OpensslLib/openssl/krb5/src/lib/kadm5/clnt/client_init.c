@@ -161,7 +161,6 @@ init_any(krb5_context context, char *client_name, enum init_type init_type,
     generic_ret r = { 0, 0 };
 
     initialize_ovk_error_table();
-/*      initialize_adb_error_table(); */
     initialize_ovku_error_table();
 
     if (! server_handle) {
@@ -466,6 +465,9 @@ gic_iter(kadm5_server_handle_t handle, enum init_type init_type,
     /* Credentials for kadmin don't need to be forwardable or proxiable. */
     if (init_type != INIT_CREDS) {
         code = krb5_get_init_creds_opt_alloc(ctx, &opt);
+        if (code)
+            goto error;
+
         krb5_get_init_creds_opt_set_forwardable(opt, 0);
         krb5_get_init_creds_opt_set_proxiable(opt, 0);
         krb5_get_init_creds_opt_set_out_ccache(ctx, opt, ccache);
@@ -612,53 +614,8 @@ setup_gss(kadm5_server_handle_t handle, kadm5_config_params *params_in,
     gssstat = gss_acquire_cred(&minor_stat, gss_client, 0,
                                GSS_C_NULL_OID_SET, GSS_C_INITIATE,
                                &handle->cred, NULL, NULL);
-    if (gssstat != GSS_S_COMPLETE) {
-#if 0 /* for debugging only */
-        {
-            OM_uint32 maj_status, min_status, message_context = 0;
-            gss_buffer_desc status_string;
-            do {
-                maj_status = gss_display_status(&min_status,
-                                                gssstat,
-                                                GSS_C_GSS_CODE,
-                                                GSS_C_NO_OID,
-                                                &message_context,
-                                                &status_string);
-                if (maj_status == GSS_S_COMPLETE) {
-                    fprintf(stderr, "MAJ: %.*s\n",
-                            (int) status_string.length,
-                            (char *)status_string.value);
-                    gss_release_buffer(&min_status, &status_string);
-                } else {
-                    fprintf(stderr,
-                            "MAJ? gss_display_status returns 0x%lx?!\n",
-                            (unsigned long) maj_status);
-                    message_context = 0;
-                }
-            } while (message_context != 0);
-            do {
-                maj_status = gss_display_status(&min_status,
-                                                minor_stat,
-                                                GSS_C_MECH_CODE,
-                                                GSS_C_NO_OID,
-                                                &message_context,
-                                                &status_string);
-                if (maj_status == GSS_S_COMPLETE) {
-                    fprintf(stderr, "MIN: %.*s\n",
-                            (int) status_string.length,
-                            (char *)status_string.value);
-                    gss_release_buffer(&min_status, &status_string);
-                } else {
-                    fprintf(stderr,
-                            "MIN? gss_display_status returns 0x%lx?!\n",
-                            (unsigned long) maj_status);
-                    message_context = 0;
-                }
-            } while (message_context != 0);
-        }
-#endif
+    if (gssstat != GSS_S_COMPLETE)
         goto error;
-    }
 
     /*
      * Do actual creation of RPC auth handle.  Implements auth flavor

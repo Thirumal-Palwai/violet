@@ -1,5 +1,5 @@
 #
-#  Copyright (c) 2018, ARM Limited. All rights reserved.
+#  Copyright (c) 2018 - 2025, Arm Limited. All rights reserved.
 #
 #  SPDX-License-Identifier: BSD-2-Clause-Patent
 #
@@ -36,15 +36,31 @@
 [Sources.AARCH64]
   AArch64/Helper.S | GCC
 
+[FeaturePcd]
+  gArmSgiTokenSpaceGuid.PcdPcieEnable
+
 [FixedPcd]
   gArmPlatformTokenSpaceGuid.PcdClusterCount
   gArmPlatformTokenSpaceGuid.PcdCoreCount
+  gArmPlatformTokenSpaceGuid.PcdArmHdLcdBase
 
   gArmSgiTokenSpaceGuid.PcdDramBlock2Base
   gArmSgiTokenSpaceGuid.PcdDramBlock2Size
+  gArmSgiTokenSpaceGuid.PcdGicSize
+  gArmSgiTokenSpaceGuid.PcdIoVirtSocExpBlk0Base
+  gArmSgiTokenSpaceGuid.PcdIoVirtSocExpBlkUartEnable
+  gArmSgiTokenSpaceGuid.PcdMaxAddressBitsPerChip
 
   gArmTokenSpaceGuid.PcdSystemMemoryBase
   gArmTokenSpaceGuid.PcdSystemMemorySize
+
+  gArmSgiTokenSpaceGuid.PcdDramBlock2AddrChip0
+  gArmSgiTokenSpaceGuid.PcdDramBlock2AddrChip1
+  gArmSgiTokenSpaceGuid.PcdDramBlock2AddrChip2
+  gArmSgiTokenSpaceGuid.PcdDramBlock2AddrChip3
+
+  gArmSgiTokenSpaceGuid.PcdChipCount
+
   gArmTokenSpaceGuid.PcdGicDistributorBase
   gArmTokenSpaceGuid.PcdGicRedistributorsBase
   gArmTokenSpaceGuid.PcdFvBaseAddress
@@ -60,7 +76,23 @@
   gArmTokenSpaceGuid.PcdMmBufferBase
   gArmTokenSpaceGuid.PcdMmBufferSize
 
+  gArmSgiTokenSpaceGuid.PcdSmcCs0Base
+  gArmSgiTokenSpaceGuid.PcdSmcCs1Base
+  gArmSgiTokenSpaceGuid.PcdSmmuBase
+  gArmSgiTokenSpaceGuid.PcdSmmuSize
+  gArmSgiTokenSpaceGuid.PcdSysPeriphBase
+  gArmSgiTokenSpaceGuid.PcdTimerFrame0Base
+  gArmSgiTokenSpaceGuid.PcdTimerFrame0Size
+  gArmSgiTokenSpaceGuid.PcdTimerControlBase
+  gArmSgiTokenSpaceGuid.PcdTimerControlSize
+  gArmSgiTokenSpaceGuid.PcdTimerCounterReadBase
+  gArmSgiTokenSpaceGuid.PcdTimerCounterReadSize
+  gArmSgiTokenSpaceGuid.PcdWdogBase
+  gArmSgiTokenSpaceGuid.PcdWdogSize
+
   gEfiMdePkgTokenSpaceGuid.PcdPciExpressBaseAddress
+  gEfiMdeModulePkgTokenSpaceGuid.PcdFlashNvStorageVariableBase64
+  gEfiMdeModulePkgTokenSpaceGuid.PcdSerialRegisterBase
 
 [Guids]
   gArmSgiPlatformIdDescriptorGuid

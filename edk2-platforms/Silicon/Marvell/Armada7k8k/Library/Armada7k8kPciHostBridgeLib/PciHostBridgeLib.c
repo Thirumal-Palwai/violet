@@ -9,6 +9,7 @@
 **/
 #include <PiDxe.h>
 
+#include <Library/BaseMemoryLib.h>
 #include <Library/DebugLib.h>
 #include <Library/DevicePathLib.h>
 #include <Library/MemoryAllocationLib.h>
@@ -27,7 +28,7 @@ typedef struct {
 } EFI_PCI_ROOT_BRIDGE_DEVICE_PATH;
 #pragma pack ()
 
-STATIC EFI_PCI_ROOT_BRIDGE_DEVICE_PATH mEfiPciRootBridgeDevicePath = {
+STATIC CONST EFI_PCI_ROOT_BRIDGE_DEVICE_PATH mEfiPciRootBridgeDevicePathTemplate = {
   {
     {
       ACPI_DEVICE_PATH,
@@ -38,7 +39,7 @@ STATIC EFI_PCI_ROOT_BRIDGE_DEVICE_PATH mEfiPciRootBridgeDevicePath = {
       }
     },
     EISA_PNP_ID (0x0A08), // PCI Express
-    0
+    0 // AcpiDevicePath.UID
   },
 
   {
@@ -74,6 +75,7 @@ PciHostBridgeGetRootBridges (
 {
   MV_BOARD_PCIE_DESCRIPTION CONST *BoardPcieDescription;
   MARVELL_BOARD_DESC_PROTOCOL     *BoardDescriptionProtocol;
+  EFI_PCI_ROOT_BRIDGE_DEVICE_PATH *EfiPciRootBridgeDevicePath;
   MV_PCIE_CONTROLLER CONST        *PcieController;
   PCI_ROOT_BRIDGE                 *PciRootBridges;
   PCI_ROOT_BRIDGE                 *RootBridge;
@@ -89,7 +91,7 @@ PciHostBridgeGetRootBridges (
   if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR,
       "%a: Cannot locate BoardDesc protocol\n",
-      __FUNCTION__));
+      __func__));
     return NULL;
   }
 
@@ -102,7 +104,7 @@ PciHostBridgeGetRootBridges (
   } else if (EFI_ERROR (Status)) {
     DEBUG ((DEBUG_ERROR,
       "%a: Cannot get Pcie board desc from BoardDesc protocol\n",
-      __FUNCTION__));
+      __func__));
     return NULL;
   }
 
@@ -110,7 +112,7 @@ PciHostBridgeGetRootBridges (
   PciRootBridges = AllocateZeroPool (BoardPcieDescription->PcieControllerCount *
                                      sizeof (PCI_ROOT_BRIDGE));
   if (PciRootBridges == NULL) {
-    DEBUG ((DEBUG_ERROR, "%a: Fail to allocate resources\n", __FUNCTION__));
+    DEBUG ((DEBUG_ERROR, "%a: Fail to allocate resources\n", __func__));
     return NULL;
   }
 
@@ -119,10 +121,15 @@ PciHostBridgeGetRootBridges (
 
   /* Fill information of all root bridge instances */
   for (Index = 0; Index < *Count; Index++, RootBridge++) {
+    EfiPciRootBridgeDevicePath = AllocateCopyPool (
+                                   sizeof (EFI_PCI_ROOT_BRIDGE_DEVICE_PATH),
+                                   &mEfiPciRootBridgeDevicePathTemplate
+                                   );
+    EfiPciRootBridgeDevicePath->AcpiDevicePath.UID = Index;
 
     PcieController = &(BoardPcieDescription->PcieControllers[Index]);
 
-    RootBridge->Segment   = 0;
+    RootBridge->Segment   = Index;
     RootBridge->Supports  = 0;
     RootBridge->Attributes  = RootBridge->Supports;
 
@@ -168,7 +175,7 @@ PciHostBridgeGetRootBridges (
 
     RootBridge->NoExtendedConfigSpace = FALSE;
 
-    RootBridge->DevicePath = (EFI_DEVICE_PATH_PROTOCOL *)&mEfiPciRootBridgeDevicePath;
+    RootBridge->DevicePath = (EFI_DEVICE_PATH_PROTOCOL *)EfiPciRootBridgeDevicePath;
   }
 
   return PciRootBridges;

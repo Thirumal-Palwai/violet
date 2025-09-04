@@ -18,6 +18,7 @@ gGlobalDefines = {}
 gPlatformDefines = {}
 # PCD name and value pair for fixed at build and feature flag
 gPlatformPcds = {}
+gPlatformFinalPcds = {}
 # PCDs with type that are not fixed at build and feature flag
 gPlatformOtherPcds = {}
 gActivePlatform = None
@@ -29,6 +30,7 @@ gProcessingFile = ''
 gBuildingModule = ''
 gSkuids = []
 gDefaultStores = []
+gGuidDict = {}
 
 # definition for a MACRO name.  used to create regular expressions below.
 _MacroNamePattern = "[A-Z][A-Z0-9_]*"

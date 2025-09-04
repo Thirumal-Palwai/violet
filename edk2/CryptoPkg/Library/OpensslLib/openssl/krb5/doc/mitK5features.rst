@@ -10,7 +10,7 @@
 MIT Kerberos features
 =====================
 
-http://web.mit.edu/kerberos
+https://web.mit.edu/kerberos
 
 
 Quick facts
@@ -19,8 +19,8 @@ Quick facts
 License - :ref:`mitK5license`
 
 Releases:
-    - Latest stable: http://web.mit.edu/kerberos/krb5-1.15/
-    - Supported: http://web.mit.edu/kerberos/krb5-1.14/
+    - Latest stable: https://web.mit.edu/kerberos/krb5-1.17/
+    - Supported: https://web.mit.edu/kerberos/krb5-1.16/
     - Release cycle: 9 -- 12 months
 
 Supported platforms \/ OS distributions:
@@ -31,9 +31,9 @@ Supported platforms \/ OS distributions:
 
 Crypto backends:
     - builtin - MIT Kerberos native crypto library
-    - OpenSSL (1.0\+) - http://www.openssl.org
+    - OpenSSL (1.0\+) - https://www.openssl.org
 
-Database backends: LDAP, DB2
+Database backends: LDAP, DB2, LMDB
 
 krb4 support: Kerberos 5 release < 1.8
 
@@ -85,7 +85,7 @@ Starting from release 1.8:
 Feature list
 ------------
 
-For more information on the specific project see http://k5wiki.kerberos.org/wiki/Projects
+For more information on the specific project see https://k5wiki.kerberos.org/wiki/Projects
 
 Release 1.7
  -   Credentials delegation                   :rfc:`5896`
@@ -96,9 +96,9 @@ Release 1.7
 Release 1.8
  -   Anonymous PKINIT         :rfc:`6112` :ref:`anonymous_pkinit`
  -   Constrained delegation
- -   IAKERB                   http://tools.ietf.org/html/draft-ietf-krb-wg-iakerb-02
+ -   IAKERB                   https://tools.ietf.org/html/draft-ietf-krb-wg-iakerb-02
  -   Heimdal bridge plugin for KDC backend
- -   GSS-API S4U extensions   http://msdn.microsoft.com/en-us/library/cc246071
+ -   GSS-API S4U extensions   https://msdn.microsoft.com/en-us/library/cc246071
  -   GSS-API naming extensions                            :rfc:`6680`
  -   GSS-API extensions for storing delegated credentials :rfc:`5588`
 
@@ -132,37 +132,37 @@ Release 1.12
  -   Plugin to control krb5_aname_to_localname and krb5_kuserok behavior   :ref:`localauth_plugin`
  -   Plugin to control hostname-to-realm mappings and the default realm    :ref:`hostrealm_plugin`
  -   GSSAPI extensions for constructing MIC tokens using IOV lists         :ref:`gssapi_mic_token`
- -   Principal may refer to nonexistent policies `Policy Refcount project <http://k5wiki.kerberos.org/wiki/Projects/Policy_refcount_elimination>`_
- -   Support for having no long-term keys for a principal `Principals Without Keys project <http://k5wiki.kerberos.org/wiki/Projects/Principals_without_keys>`_
+ -   Principal may refer to nonexistent policies `Policy Refcount project <https://k5wiki.kerberos.org/wiki/Projects/Policy_refcount_elimination>`_
+ -   Support for having no long-term keys for a principal `Principals Without Keys project <https://k5wiki.kerberos.org/wiki/Projects/Principals_without_keys>`_
  -   Collection support to the KEYRING credential cache type on Linux :ref:`ccache_definition`
  -   FAST OTP preauthentication module for the KDC which uses RADIUS to validate OTP token values :ref:`otp_preauth`
- -   Experimental Audit plugin for KDC processing `Audit project <http://k5wiki.kerberos.org/wiki/Projects/Audit>`_
+ -   Experimental Audit plugin for KDC processing `Audit project <https://k5wiki.kerberos.org/wiki/Projects/Audit>`_
 
 Release 1.13
 
  -   Add support for accessing KDCs via an HTTPS proxy server using
      the `MS-KKDCP
-     <http://msdn.microsoft.com/en-us/library/hh553774.aspx>`_
+     <https://msdn.microsoft.com/en-us/library/hh553774.aspx>`_
      protocol.
  -   Add support for `hierarchical incremental propagation
-     <http://k5wiki.kerberos.org/wiki/Projects/Hierarchical_iprop>`_,
-     where slaves can act as intermediates between an upstream master
-     and other downstream slaves.
+     <https://k5wiki.kerberos.org/wiki/Projects/Hierarchical_iprop>`_,
+     where replicas can act as intermediates between an upstream master
+     and other downstream replicas.
  -   Add support for configuring GSS mechanisms using
      ``/etc/gss/mech.d/*.conf`` files in addition to
      ``/etc/gss/mech``.
  -   Add support to the LDAP KDB module for `binding to the LDAP
      server using SASL
-     <http://k5wiki.kerberos.org/wiki/Projects/LDAP_SASL_support>`_.
+     <https://k5wiki.kerberos.org/wiki/Projects/LDAP_SASL_support>`_.
  -   The KDC listens for TCP connections by default.
  -   Fix a minor key disclosure vulnerability where using the
      "keepold" option to the kadmin randkey operation could return the
      old keys. `[CVE-2014-5351]
-     <http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2014-5351>`_
+     <https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2014-5351>`_
  -   Add client support for the Kerberos Cache Manager protocol. If
      the host is running a Heimdal kcm daemon, caches served by the
      daemon can be accessed with the KCM: cache type.
- -   When built on OS X 10.7 and higher, use "KCM:" as the default
+ -   When built on macOS 10.7 and higher, use "KCM:" as the default
      cachetype, unless overridden by command-line options or
      krb5-config values.
  -   Add support for doing unlocked database dumps for the DB2 KDC
@@ -255,9 +255,9 @@ Release 1.14
 
  * Performance:
 
-   - On slave KDCs, poll the master KDC immediately after processing a
-     full resync, and do not require two full resyncs after the master
-     KDC's log file is reset.
+   - On replica KDCs, poll the master KDC immediately after processing
+     a full resync, and do not require two full resyncs after the
+     master KDC's log file is reset.
 
 Release 1.15
 
@@ -309,6 +309,168 @@ Release 1.15
   - Add support for the AES-SHA2 enctypes, which allows sites to
     conform to Suite B crypto requirements.
 
+Release 1.16
+
+* Administrator experience:
+
+  - The KDC can match PKINIT client certificates against the
+    "pkinit_cert_match" string attribute on the client principal
+    entry, using the same syntax as the existing "pkinit_cert_match"
+    profile option.
+
+  - The ktutil addent command supports the "-k 0" option to ignore the
+    key version, and the "-s" option to use a non-default salt string.
+
+  - kpropd supports a --pid-file option to write a pid file at
+    startup, when it is run in standalone mode.
+
+  - The "encrypted_challenge_indicator" realm option can be used to
+    attach an authentication indicator to tickets obtained using FAST
+    encrypted challenge pre-authentication.
+
+  - Localization support can be disabled at build time with the
+    --disable-nls configure option.
+
+* Developer experience:
+
+  - The kdcpolicy pluggable interface allows modules control whether
+    tickets are issued by the KDC.
+
+  - The kadm5_auth pluggable interface allows modules to control
+    whether kadmind grants access to a kadmin request.
+
+  - The certauth pluggable interface allows modules to control which
+    PKINIT client certificates can authenticate to which client
+    principals.
+
+  - KDB modules can use the client and KDC interface IP addresses to
+    determine whether to allow an AS request.
+
+  - GSS applications can query the bit strength of a krb5 GSS context
+    using the GSS_C_SEC_CONTEXT_SASL_SSF OID with
+    gss_inquire_sec_context_by_oid().
+
+  - GSS applications can query the impersonator name of a krb5 GSS
+    credential using the GSS_KRB5_GET_CRED_IMPERSONATOR OID with
+    gss_inquire_cred_by_oid().
+
+  - kdcpreauth modules can query the KDC for the canonicalized
+    requested client principal name, or match a principal name against
+    the requested client principal name with canonicalization.
+
+* Protocol evolution:
+
+  - The client library will continue to try pre-authentication
+    mechanisms after most failure conditions.
+
+  - The KDC will issue trivially renewable tickets (where the
+    renewable lifetime is equal to or less than the ticket lifetime)
+    if requested by the client, to be friendlier to scripts.
+
+  - The client library will use a random nonce for TGS requests
+    instead of the current system time.
+
+  - For the RC4 string-to-key or PAC operations, UTF-16 is supported
+    (previously only UCS-2 was supported).
+
+  - When matching PKINIT client certificates, UPN SANs will be matched
+    correctly as UPNs, with canonicalization.
+
+* User experience:
+
+  - Dates after the year 2038 are accepted (provided that the platform
+    time facilities support them), through the year 2106.
+
+  - Automatic credential cache selection based on the client realm
+    will take into account the fallback realm and the service
+    hostname.
+
+  - Referral and alternate cross-realm TGTs will not be cached,
+    avoiding some scenarios where they can be added to the credential
+    cache multiple times.
+
+  - A German translation has been added.
+
+* Code quality:
+
+  - The build is warning-clean under clang with the configured warning
+    options.
+
+  - The automated test suite runs cleanly under AddressSanitizer.
+
+Release 1.17
+
+* Administrator experience:
+
+  - A new Kerberos database module using the Lightning Memory-Mapped
+    Database library (LMDB) has been added.  The LMDB KDB module
+    should be more performant and more robust than the DB2 module, and
+    may become the default module for new databases in a future
+    release.
+
+  - "kdb5_util dump" will no longer dump policy entries when specific
+    principal names are requested.
+
+* Developer experience:
+
+  - The new krb5_get_etype_info() API can be used to retrieve enctype,
+    salt, and string-to-key parameters from the KDC for a client
+    principal.
+
+  - The new GSS_KRB5_NT_ENTERPRISE_NAME name type allows enterprise
+    principal names to be used with GSS-API functions.
+
+  - KDC and kadmind modules which call com_err() will now write to the
+    log file in a format more consistent with other log messages.
+
+  - Programs which use large numbers of memory credential caches
+    should perform better.
+
+* Protocol evolution:
+
+  - The SPAKE pre-authentication mechanism is now supported.  This
+    mechanism protects against password dictionary attacks without
+    requiring any additional infrastructure such as certificates.
+    SPAKE is enabled by default on clients, but must be manually
+    enabled on the KDC for this release.
+
+  - PKINIT freshness tokens are now supported.  Freshness tokens can
+    protect against scenarios where an attacker uses temporary access
+    to a smart card to generate authentication requests for the
+    future.
+
+  - Password change operations now prefer TCP over UDP, to avoid
+    spurious error messages about replays when a response packet is
+    dropped.
+
+  - The KDC now supports cross-realm S4U2Self requests when used with
+    a third-party KDB module such as Samba's.  The client code for
+    cross-realm S4U2Self requests is also now more robust.
+
+* User experience:
+
+  - The new ktutil addent -f flag can be used to fetch salt
+    information from the KDC for password-based keys.
+
+  - The new kdestroy -p option can be used to destroy a credential
+    cache within a collection by client principal name.
+
+  - The Kerberos man page has been restored, and documents the
+    environment variables that affect programs using the Kerberos
+    library.
+
+* Code quality:
+
+  - Python test scripts now use Python 3.
+
+  - Python test scripts now display markers in verbose output, making
+    it easier to find where a failure occurred within the scripts.
+
+  - The Windows build system has been simplified and updated to work
+    with more recent versions of Visual Studio.  A large volume of
+    unused Windows-specific code has been removed.  Visual Studio 2013
+    or later is now required.
+
 `Pre-authentication mechanisms`
 
 - PW-SALT                                         :rfc:`4120#section-5.2.7.3`
@@ -318,12 +480,13 @@ Release 1.15
 - PKINIT with FAST on client   (release 1.10)     :rfc:`6113`
 - PKINIT                                          :rfc:`4556`
 - FX-COOKIE                                       :rfc:`6113#section-5.2`
-- S4U-X509-USER                (release 1.8)      http://msdn.microsoft.com/en-us/library/cc246091
+- S4U-X509-USER                (release 1.8)      https://msdn.microsoft.com/en-us/library/cc246091
 - OTP                          (release 1.12)     :ref:`otp_preauth`
+- SPAKE                        (release 1.17)     :ref:`spake`
 
 `PRNG`
 
 - modularity       (release 1.9)
 - Yarrow PRNG      (release < 1.10)
-- Fortuna PRNG     (release 1.9)       http://www.schneier.com/book-practical.html
+- Fortuna PRNG     (release 1.9)       https://www.schneier.com/book-practical.html
 - OS PRNG          (release 1.10)      OS's native PRNG

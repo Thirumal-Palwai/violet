@@ -223,6 +223,26 @@ time as follows::
 
     kadmin -q 'add_principal +requires_preauth -nokey YOUR_PRINCNAME'
 
+By default, the KDC requires PKINIT client certificates to have the
+standard Extended Key Usage and Subject Alternative Name attributes
+for PKINIT.  Starting in release 1.16, it is possible to authorize
+client certificates based on the subject or other criteria instead of
+the standard PKINIT Subject Alternative Name, by setting the
+**pkinit_cert_match** string attribute on each client principal entry.
+For example::
+
+    kadmin set_string user@REALM pkinit_cert_match "<SUBJECT>CN=user@REALM$"
+
+The **pkinit_cert_match** string attribute follows the syntax used by
+the :ref:`krb5.conf(5)` **pkinit_cert_match** relation.  To allow the
+use of non-PKINIT client certificates, it will also be necessary to
+disable key usage checking using the **pkinit_eku_checking** relation;
+for example::
+
+    [kdcdefaults]
+        pkinit_eku_checking = none
+
+
 
 Configuring the clients
 -----------------------
@@ -307,3 +327,28 @@ appropriate :ref:`kdc_realms` subsection of the KDC's
 To obtain anonymous credentials on a client, run ``kinit -n``, or
 ``kinit -n @REALMNAME`` to specify a realm.  The resulting tickets
 will have the client name ``WELLKNOWN/ANONYMOUS@WELLKNOWN:ANONYMOUS``.
+
+
+Freshness tokens
+----------------
+
+Freshness tokens can ensure that the client has recently had access to
+its certificate private key.  If freshness tokens are not required by
+the KDC, a client program with temporary possession of the private key
+can compose requests for future timestamps and use them later.
+
+In release 1.17 and later, freshness tokens are supported by the
+client and are sent by the KDC when the client indicates support for
+them.  Because not all clients support freshness tokens yet, they are
+not required by default.  To check if freshness tokens are supported
+by a realm's clients, look in the KDC logs for the lines::
+
+    PKINIT: freshness token received from <client principal>
+    PKINIT: no freshness token received from <client principal>
+
+To require freshness tokens for all clients in a realm (except for
+clients authenticating anonymously), set the
+**pkinit_require_freshness** variable to ``true`` in the appropriate
+:ref:`kdc_realms` subsection of the KDC's :ref:`kdc.conf(5)` file.  To
+test that this option is in effect, run ``kinit -X disable_freshness``
+and verify that authentication is unsuccessful.

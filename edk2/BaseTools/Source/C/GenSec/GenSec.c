@@ -177,7 +177,7 @@ Returns:
   fprintf (stdout, "  -l GuidHeaderLength, --HeaderLength GuidHeaderLength\n\
                         GuidHeaderLength is the size of header of guided data\n");
   fprintf (stdout, "  -r GuidAttr, --attributes GuidAttr\n\
-                        GuidAttr is guid section atttributes, which may be\n\
+                        GuidAttr is guid section attributes, which may be\n\
                         PROCESSING_REQUIRED, AUTH_STATUS_VALID and NONE. \n\
                         if -r option is not given, default PROCESSING_REQUIRED\n");
   fprintf (stdout, "  -n String, --name String\n\
@@ -1062,7 +1062,7 @@ GetAlignmentFromFile(char *InFile, UINT32 *Alignment)
   PeFileBuffer = (UINT8 *) malloc (PeFileSize);
   if (PeFileBuffer == NULL) {
     fclose (InFileHandle);
-    Error(NULL, 0, 4001, "Resource", "memory cannot be allocated  of %s", InFile);
+    Error(NULL, 0, 4001, "Resource", "memory cannot be allocated for %s", InFile);
     return EFI_OUT_OF_RESOURCES;
   }
   fread (PeFileBuffer, sizeof (UINT8), PeFileSize, InFileHandle);

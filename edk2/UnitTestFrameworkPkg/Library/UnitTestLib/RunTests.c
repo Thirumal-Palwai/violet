@@ -14,6 +14,8 @@
 
 STATIC UNIT_TEST_FRAMEWORK_HANDLE  mFrameworkHandle = NULL;
 
+BASE_LIBRARY_JUMP_BUFFER  gUnitTestJumpBuffer;
+
 UNIT_TEST_FRAMEWORK_HANDLE
 GetActiveFrameworkHandle (
   VOID
@@ -33,12 +35,12 @@ RunTestSuite (
   UNIT_TEST             *Test;
   UNIT_TEST_FRAMEWORK   *ParentFramework;
 
-  TestEntry       = NULL;
-  ParentFramework = (UNIT_TEST_FRAMEWORK *)Suite->ParentFramework;
-
   if (Suite == NULL) {
     return EFI_INVALID_PARAMETER;
   }
+
+  TestEntry       = NULL;
+  ParentFramework = (UNIT_TEST_FRAMEWORK *)Suite->ParentFramework;
 
   DEBUG ((DEBUG_VERBOSE, "---------------------------------------------------------\n"));
   DEBUG ((DEBUG_VERBOSE, "RUNNING TEST SUITE: %a\n", Suite->Title));
@@ -52,8 +54,9 @@ RunTestSuite (
   // Iterate all tests within the suite
   //
   for (TestEntry = (UNIT_TEST_LIST_ENTRY *)GetFirstNode (&(Suite->TestCaseList));
-       (LIST_ENTRY*)TestEntry != &(Suite->TestCaseList);
-       TestEntry = (UNIT_TEST_LIST_ENTRY *)GetNextNode (&(Suite->TestCaseList), (LIST_ENTRY *)TestEntry)) {
+       (LIST_ENTRY *)TestEntry != &(Suite->TestCaseList);
+       TestEntry = (UNIT_TEST_LIST_ENTRY *)GetNextNode (&(Suite->TestCaseList), (LIST_ENTRY *)TestEntry))
+  {
     Test                         = &TestEntry->UT;
     ParentFramework->CurrentTest = Test;
 
@@ -65,7 +68,7 @@ RunTestSuite (
     // First, check to see whether the test has already been run.
     // NOTE: This would generally only be the case if a saved state was detected and loaded.
     //
-    if (Test->Result != UNIT_TEST_PENDING && Test->Result != UNIT_TEST_RUNNING) {
+    if ((Test->Result != UNIT_TEST_PENDING) && (Test->Result != UNIT_TEST_RUNNING)) {
       DEBUG ((DEBUG_VERBOSE, "Test was run on a previous pass. Skipping.\n"));
       ParentFramework->CurrentTest = NULL;
       continue;
@@ -73,12 +76,19 @@ RunTestSuite (
 
     //
     // Next, if we're still running, make sure that our test prerequisites are in place.
-    if (Test->Result == UNIT_TEST_PENDING && Test->Prerequisite != NULL) {
+    if ((Test->Result == UNIT_TEST_PENDING) && (Test->Prerequisite != NULL)) {
       DEBUG ((DEBUG_VERBOSE, "PREREQ\n"));
-      if (Test->Prerequisite (Test->Context) != UNIT_TEST_PASSED) {
+      if (SetJump (&gUnitTestJumpBuffer) == 0) {
+        if (Test->Prerequisite (Test->Context) != UNIT_TEST_PASSED) {
+          DEBUG ((DEBUG_ERROR, "Prerequisite Not Met\n"));
+          Test->Result                 = UNIT_TEST_ERROR_PREREQUISITE_NOT_MET;
+          ParentFramework->CurrentTest = NULL;
+          continue;
+        }
+      } else {
         DEBUG ((DEBUG_ERROR, "Prerequisite Not Met\n"));
-        Test->Result = UNIT_TEST_ERROR_PREREQUISITE_NOT_MET;
-        ParentFramework->CurrentTest  = NULL;
+        Test->Result                 = UNIT_TEST_ERROR_PREREQUISITE_NOT_MET;
+        ParentFramework->CurrentTest = NULL;
         continue;
       }
     }
@@ -88,14 +98,20 @@ RunTestSuite (
     // We set the status to UNIT_TEST_RUNNING in case the test needs to reboot
     // or quit. The UNIT_TEST_RUNNING state will allow the test to resume
     // but will prevent the Prerequisite from being dispatched a second time.
-    Test->Result = UNIT_TEST_RUNNING;
-    Test->Result = Test->RunTest (Test->Context);
+    if (SetJump (&gUnitTestJumpBuffer) == 0) {
+      Test->Result = UNIT_TEST_RUNNING;
+      Test->Result = Test->RunTest (Test->Context);
+    } else {
+      Test->Result = UNIT_TEST_ERROR_TEST_FAILED;
+    }
 
     //
     // Finally, clean everything up, if need be.
     if (Test->CleanUp != NULL) {
       DEBUG ((DEBUG_VERBOSE, "CLEANUP\n"));
-      Test->CleanUp (Test->Context);
+      if (SetJump (&gUnitTestJumpBuffer) == 0) {
+        Test->CleanUp (Test->Context);
+      }
     }
 
     //
@@ -151,8 +167,9 @@ RunAllTestSuites (
   // Iterate all suites
   //
   for (Suite = (UNIT_TEST_SUITE_LIST_ENTRY *)GetFirstNode (&Framework->TestSuiteList);
-    (LIST_ENTRY *)Suite != &Framework->TestSuiteList;
-    Suite = (UNIT_TEST_SUITE_LIST_ENTRY *)GetNextNode (&Framework->TestSuiteList, (LIST_ENTRY *)Suite)) {
+       (LIST_ENTRY *)Suite != &Framework->TestSuiteList;
+       Suite = (UNIT_TEST_SUITE_LIST_ENTRY *)GetNextNode (&Framework->TestSuiteList, (LIST_ENTRY *)Suite))
+  {
     Status = RunTestSuite (&(Suite->UTS));
     if (EFI_ERROR (Status)) {
       DEBUG ((DEBUG_ERROR, "Test Suite Failed with Error.  %r\n", Status));
@@ -162,7 +179,7 @@ RunAllTestSuites (
   //
   // Save current state so if test is started again it doesn't have to run.  It will just report
   //
-  SaveFrameworkState (FrameworkHandle, NULL, 0);
+  SaveFrameworkState (NULL, 0);
   OutputUnitTestFrameworkReport (FrameworkHandle);
 
   mFrameworkHandle = NULL;

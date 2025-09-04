@@ -33,6 +33,7 @@
 #include <Protocol/PciEnumerationComplete.h>
 #include <Protocol/PlatformVtdPolicy.h>
 #include <Protocol/IoMmu.h>
+#include <Protocol/PciRootBridgeIo.h>
 
 #include <IndustryStandard/Pci.h>
 #include <IndustryStandard/DmaRemappingReportingTable.h>
@@ -44,6 +45,13 @@
 #define ALIGN_VALUE_LOW(Value, Alignment) ((Value) & (~((Alignment) - 1)))
 
 #define VTD_TPL_LEVEL TPL_NOTIFY
+
+//
+// Use 256-bit descriptor
+// Queue size is 128.
+//
+#define VTD_QUEUED_INVALIDATION_DESCRIPTOR_WIDTH 1
+#define VTD_INVALIDATION_QUEUE_SIZE 0
 
 //
 // This is the initial max PCI DATA number.
@@ -69,6 +77,7 @@ typedef struct {
 typedef struct {
   UINTN                            VtdUnitBaseAddress;
   UINT16                           Segment;
+  VTD_VER_REG                      VerReg;
   VTD_CAP_REG                      CapReg;
   VTD_ECAP_REG                     ECapReg;
   VTD_ROOT_ENTRY                   *RootEntryTable;
@@ -77,6 +86,10 @@ typedef struct {
   BOOLEAN                          HasDirtyContext;
   BOOLEAN                          HasDirtyPages;
   PCI_DEVICE_INFORMATION           PciDeviceInfo;
+  BOOLEAN                          Is5LevelPaging;
+  UINT8                            EnableQueuedInvalidation;
+  VOID                             *QiDescBuffer;
+  UINTN                            QiDescBufferSize;
 } VTD_UNIT_INFORMATION;
 
 //
@@ -179,6 +192,20 @@ FlushWriteBuffer (
   );
 
 /**
+  Perpare cache invalidation interface.
+
+  @param[in]  VtdIndex          The index used to identify a VTd engine.
+
+  @retval EFI_SUCCESS           The operation was successful.
+  @retval EFI_UNSUPPORTED       Invalidation method is not supported.
+  @retval EFI_OUT_OF_RESOURCES  A memory allocation failed.
+**/
+EFI_STATUS
+PerpareCacheInvalidationInterface (
+  IN UINTN  VtdIndex
+  );
+
+/**
   Invalidate VTd context cache.
 
   @param[in]  VtdIndex          The index used to identify a VTd engine.
@@ -227,6 +254,16 @@ DumpVtdRegs (
 VOID
 DumpVtdRegsAll (
   VOID
+  );
+
+/**
+  Dump VTd version registers.
+
+  @param[in]  VerReg            The version register.
+**/
+VOID
+DumpVtdVerRegs (
+  IN VTD_VER_REG                *VerReg
   );
 
 /**
@@ -312,6 +349,22 @@ ScanPciBus (
   );
 
 /**
+  Scan PCI bus and invoke callback function for each PCI devices under all root bus.
+
+  @param[in]  Context               The context of the callback function.
+  @param[in]  Segment               The segment of the source.
+  @param[in]  Callback              The callback function in PCI scan.
+
+  @retval EFI_SUCCESS           The PCI devices under the bus are scaned.
+**/
+EFI_STATUS
+ScanAllPciBus (
+  IN VOID                         *Context,
+  IN UINT16                       Segment,
+  IN SCAN_BUS_FUNC_CALLBACK_FUNC  Callback
+  );
+
+/**
   Dump the PCI device information managed by this VTd engine.
 
   @param[in]  VtdIndex              The index of VTd engine.
@@ -375,31 +428,37 @@ ParseDmarAcpiTableRmrr (
 /**
   Dump DMAR context entry table.
 
-  @param[in]  RootEntry DMAR root entry.
+  @param[in]  RootEntry       DMAR root entry.
+  @param[in]  Is5LevelPaging  If it is the 5 level paging.
 **/
 VOID
 DumpDmarContextEntryTable (
-  IN VTD_ROOT_ENTRY *RootEntry
+  IN VTD_ROOT_ENTRY *RootEntry,
+  IN BOOLEAN Is5LevelPaging
   );
 
 /**
   Dump DMAR extended context entry table.
 
-  @param[in]  ExtRootEntry DMAR extended root entry.
+  @param[in]  ExtRootEntry    DMAR extended root entry.
+  @param[in]  Is5LevelPaging  If it is the 5 level paging.
 **/
 VOID
 DumpDmarExtContextEntryTable (
-  IN VTD_EXT_ROOT_ENTRY *ExtRootEntry
+  IN VTD_EXT_ROOT_ENTRY *ExtRootEntry,
+  IN BOOLEAN Is5LevelPaging
   );
 
 /**
   Dump DMAR second level paging entry.
 
-  @param[in]  SecondLevelPagingEntry The second level paging entry.
+  @param[in]  SecondLevelPagingEntry  The second level paging entry.
+  @param[in]  Is5LevelPaging          If it is the 5 level paging.
 **/
 VOID
 DumpSecondLevelPagingEntry (
-  IN VOID *SecondLevelPagingEntry
+  IN VOID *SecondLevelPagingEntry,
+  IN BOOLEAN Is5LevelPaging
   );
 
 /**

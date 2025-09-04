@@ -2213,15 +2213,13 @@ char * MR_ruleNamePlusOffset(n)
 {
     int     offset=MR_offsetFromRule(n);
 
-    strncpy(ruleNameStatic1, n->rname, ruleNameMax - 1);
-    ruleNameStatic1[ruleNameMax - 1] = '\0';  // Ensure null termination
-
+    strncpy(ruleNameStatic1,n->rname,ruleNameMax);
     if (offset < 0) {
-        snprintf(ruleNameStatic2, sizeof(ruleNameStatic2), "%s/?", ruleNameStatic1);
+      sprintf(ruleNameStatic2,"%s/?",ruleNameStatic1);
     } else {
-        snprintf(ruleNameStatic2, sizeof(ruleNameStatic2), "%s/%d", ruleNameStatic1, offset + 1);
+      sprintf(ruleNameStatic2,"%s/%d",ruleNameStatic1,offset+1);
     };
-	return ruleNameStatic2;
+    return ruleNameStatic2;
 }
 
 #ifdef __USE_PROTOS

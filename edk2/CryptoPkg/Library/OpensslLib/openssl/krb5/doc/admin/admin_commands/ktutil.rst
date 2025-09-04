@@ -87,9 +87,14 @@ add_entry
 ~~~~~~~~~
 
     **add_entry** {**-key**\|\ **-password**} **-p** *principal*
-    **-k** *kvno* **-e** *enctype*
+    **-k** *kvno* [**-e** *enctype*] [**-f**\|\ **-s** *salt*]
 
-Add *principal* to keylist using key or password.
+Add *principal* to keylist using key or password.  If the **-f** flag
+is specified, salt information will be fetched from the KDC; in this
+case the **-e** flag may be omitted, or it may be supplied to force a
+particular enctype.  If the **-f** flag is not specified, the **-e**
+flag must be specified, and the default salt will be used unless
+overridden with the **-s** option.
 
 Alias: **addent**
 
@@ -127,7 +132,14 @@ EXAMPLE
     ktutil:
 
 
+ENVIRONMENT
+-----------
+
+See :ref:`kerberos(7)` for a description of Kerberos environment
+variables.
+
+
 SEE ALSO
 --------
 
-:ref:`kadmin(1)`, :ref:`kdb5_util(8)`
+:ref:`kadmin(1)`, :ref:`kdb5_util(8)`, :ref:`kerberos(7)`

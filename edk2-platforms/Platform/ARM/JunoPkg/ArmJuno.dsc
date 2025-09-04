@@ -1,5 +1,6 @@
 #
 #  Copyright (c) 2013-2018, ARM Limited. All rights reserved.
+#  (C) Copyright 2021 Hewlett Packard Enterprise Development LP<BR>
 #
 #  SPDX-License-Identifier: BSD-2-Clause-Patent
 #
@@ -20,9 +21,11 @@
   OUTPUT_DIRECTORY               = Build/ArmJuno
 !endif
   SUPPORTED_ARCHITECTURES        = AARCH64|ARM
-  BUILD_TARGETS                  = DEBUG|RELEASE
+  BUILD_TARGETS                  = DEBUG|RELEASE|NOOPT
   SKUID_IDENTIFIER               = DEFAULT
   FLASH_DEFINITION               = Platform/ARM/JunoPkg/ArmJuno.fdf
+
+!include MdePkg/MdeLibs.dsc.inc
 
 # On RTSM, most peripherals are VExpress Motherboard peripherals
 !include Platform/ARM/VExpressPkg/ArmVExpress.dsc.inc
@@ -34,11 +37,21 @@
 
 [LibraryClasses.common]
   ArmLib|ArmPkg/Library/ArmLib/ArmBaseLib.inf
-  ArmMmuLib|ArmPkg/Library/ArmMmuLib/ArmMmuBaseLib.inf
+  ArmMmuLib|UefiCpuPkg/Library/ArmMmuLib/ArmMmuBaseLib.inf
   ArmPlatformLib|Platform/ARM/JunoPkg/Library/ArmJunoLib/ArmJunoLib.inf
-  ArmSmcLib|ArmPkg/Library/ArmSmcLib/ArmSmcLib.inf
+  ArmSmcLib|MdePkg/Library/ArmSmcLib/ArmSmcLib.inf
+  ArmHvcLib|ArmPkg/Library/ArmHvcLib/ArmHvcLib.inf
 
+  # Trng Supports.
+  ArmMonitorLib|ArmPkg/Library/ArmMonitorLib/ArmMonitorLib.inf
+  ArmTrngLib|ArmPkg/Library/ArmTrngLib/ArmTrngLib.inf
+  # Rng
+  RngLib|MdePkg/Library/DxeRngLib/DxeRngLib.inf
+
+  NorFlashDeviceLib|Platform/ARM/Library/P30NorFlashDeviceLib/P30NorFlashDeviceLib.inf
   NorFlashPlatformLib|Platform/ARM/JunoPkg/Library/NorFlashJunoLib/NorFlashJunoLib.inf
+  # NOR flash identification support
+  NorFlashInfoLib|EmbeddedPkg/Library/NorFlashInfoLib/NorFlashInfoLib.inf
 
   CapsuleLib|MdeModulePkg/Library/DxeCapsuleLibNull/DxeCapsuleLibNull.inf
   CustomizedDisplayLib|MdeModulePkg/Library/CustomizedDisplayLib/CustomizedDisplayLib.inf
@@ -57,7 +70,6 @@
 [LibraryClasses.common.SEC]
   PrePiLib|EmbeddedPkg/Library/PrePiLib/PrePiLib.inf
   ExtractGuidedSectionLib|EmbeddedPkg/Library/PrePiExtractGuidedSectionLib/PrePiExtractGuidedSectionLib.inf
-  LzmaDecompressLib|MdeModulePkg/Library/LzmaCustomDecompressLib/LzmaCustomDecompressLib.inf
   MemoryAllocationLib|EmbeddedPkg/Library/PrePiMemoryAllocationLib/PrePiMemoryAllocationLib.inf
   HobLib|EmbeddedPkg/Library/PrePiHobLib/PrePiHobLib.inf
   PrePiHobListPointerLib|ArmPlatformPkg/Library/PrePiHobListPointerLib/PrePiHobListPointerLib.inf
@@ -80,6 +92,9 @@
 
 !ifdef DYNAMIC_TABLES_FRAMEWORK
   *_*_*_PLATFORM_FLAGS = -DDYNAMIC_TABLES_FRAMEWORK
+!endif
+!ifdef ENABLE_CPC
+  *_*_*_PLATFORM_FLAGS = -DENABLE_CPC
 !endif
 
 ################################################################################
@@ -124,8 +139,6 @@
   gArmPlatformTokenSpaceGuid.PcdCoreCount|6
   gArmPlatformTokenSpaceGuid.PcdClusterCount|2
 
-  gArmTokenSpaceGuid.PcdVFPEnabled|1
-
   #
   # ARM PrimeCell
   #
@@ -150,9 +163,9 @@
 !endif
 
   # LAN9118 Ethernet Driver
-  gEmbeddedTokenSpaceGuid.PcdLan9118DxeBaseAddress|0x18000000
-  gEmbeddedTokenSpaceGuid.PcdLan9118DefaultMacAddress|0x1215161822242628
-  gEmbeddedTokenSpaceGuid.PcdLan9118DefaultNegotiationTimeout|40000
+  gArmVExpressTokenSpaceGuid.PcdLan9118DxeBaseAddress|0x18000000
+  gArmVExpressTokenSpaceGuid.PcdLan9118DefaultMacAddress|0x1215161822242628
+  gArmVExpressTokenSpaceGuid.PcdLan9118DefaultNegotiationTimeout|40000
 
   #
   # ARM Generic Interrupt Controller
@@ -177,17 +190,11 @@
   gArmTokenSpaceGuid.PcdPciMmio64Size|0x100000000
 
   gEfiMdePkgTokenSpaceGuid.PcdPciExpressBaseAddress|0x40000000
-  gArmTokenSpaceGuid.PcdPciIoTranslation|0x5f800000
+  gEfiMdePkgTokenSpaceGuid.PcdPciIoTranslation|0x5f800000
   gEmbeddedTokenSpaceGuid.PcdPrePiCpuIoSize|24
 
   # List of Device Paths that support BootMonFs
-  gArmBootMonFsTokenSpaceGuid.PcdBootMonFsSupportedDevicePaths|L"VenHw(93E34C7E-B50E-11DF-9223-2443DFD72085,00)"
-
-  #
-  # ARM Architectural Timer Frequency
-  #
-  gArmTokenSpaceGuid.PcdArmArchTimerFreqInHz|50000000
-  gEmbeddedTokenSpaceGuid.PcdMetronomeTickPeriod|1000
+  gArmBootMonFsTokenSpaceGuid.PcdBootMonFsSupportedDevicePaths|L"VenHw(DE6AE758-D662-4E17-A97C-4C5964DA4C41,00)"
 
   gEfiMdeModulePkgTokenSpaceGuid.PcdResetOnMemoryTypeInformationChange|FALSE
 
@@ -200,6 +207,22 @@
   # ACPI Table Version
   #
   gEfiMdeModulePkgTokenSpaceGuid.PcdAcpiExposedTableVersions|0x20
+
+!ifdef ENABLE_CPC
+  #
+  # Allow some relaxation on some specific points for the platforms that desire it.
+  #   BIT0: Allow the absence of some registers in the _CPC object.
+  #
+  gEdkiiDynamicTablesPkgTokenSpaceGuid.PcdDevelopmentPlatformRelaxations|0x1
+!endif
+
+  #
+  # Juno Support Trng. Override PcdEnforceSecureRngAlgorithms.
+  #
+  gEfiMdePkgTokenSpaceGuid.PcdEnforceSecureRngAlgorithms|TRUE
+
+[PcdsFixedAtBuild.ARM]
+  gArmTokenSpaceGuid.PcdVFPEnabled|1
 
 [PcdsPatchableInModule]
   # Console Resolution (Full HD)
@@ -228,7 +251,10 @@
   #
   # PEI Phase modules
   #
-  ArmPlatformPkg/PrePi/PeiUniCore.inf
+  ArmPlatformPkg/PeilessSec/PeilessSec.inf {
+    <LibraryClasses>
+      NULL|MdeModulePkg/Library/LzmaCustomDecompressLib/LzmaCustomDecompressLib.inf
+  }
 
   #
   # DXE
@@ -246,10 +272,10 @@
   MdeModulePkg/Core/RuntimeDxe/RuntimeDxe.inf
   MdeModulePkg/Universal/SecurityStubDxe/SecurityStubDxe.inf
   MdeModulePkg/Universal/CapsuleRuntimeDxe/CapsuleRuntimeDxe.inf
+  MdeModulePkg/Universal/Metronome/Metronome.inf
   MdeModulePkg/Universal/MonotonicCounterRuntimeDxe/MonotonicCounterRuntimeDxe.inf
   MdeModulePkg/Universal/ResetSystemRuntimeDxe/ResetSystemRuntimeDxe.inf
   EmbeddedPkg/RealTimeClockRuntimeDxe/RealTimeClockRuntimeDxe.inf
-  EmbeddedPkg/MetronomeDxe/MetronomeDxe.inf
 
   MdeModulePkg/Universal/Console/ConPlatformDxe/ConPlatformDxe.inf
   MdeModulePkg/Universal/Console/ConSplitterDxe/ConSplitterDxe.inf
@@ -274,8 +300,8 @@
 !endif
   MdeModulePkg/Universal/HiiDatabaseDxe/HiiDatabaseDxe.inf
 
-  ArmPkg/Drivers/ArmGic/ArmGicDxe.inf
-  ArmPlatformPkg/Drivers/NorFlashDxe/NorFlashDxe.inf
+  ArmPkg/Drivers/ArmGicDxe/ArmGicV2Dxe.inf
+  Platform/ARM/Drivers/NorFlashDxe/NorFlashDxe.inf
   ArmPkg/Drivers/TimerDxe/TimerDxe.inf
   ArmPkg/Drivers/GenericWatchdogDxe/GenericWatchdogDxe.inf
 
@@ -314,7 +340,7 @@
   # SATA Controller
   #
   MdeModulePkg/Bus/Ata/AtaBusDxe/AtaBusDxe.inf
-  EmbeddedPkg/Drivers/SataSiI3132Dxe/SataSiI3132Dxe.inf
+  Platform/ARM/JunoPkg/Drivers/SataSiI3132Dxe/SataSiI3132Dxe.inf
 
   #
   # NVMe boot devices
@@ -324,7 +350,7 @@
   #
   # Networking stack
   #
-  EmbeddedPkg/Drivers/Lan9118Dxe/Lan9118Dxe.inf
+  Platform/ARM/VExpressPkg/Drivers/Lan9118Dxe/Lan9118Dxe.inf
 !if 0
   OptionRomPkg/MarvellYukonDxe/MarvellYukonDxe.inf
 !endif
@@ -360,12 +386,14 @@
   #
   # Bds
   #
+  MdeModulePkg/Universal/BootManagerPolicyDxe/BootManagerPolicyDxe.inf
   MdeModulePkg/Universal/DevicePathDxe/DevicePathDxe.inf
   MdeModulePkg/Universal/DisplayEngineDxe/DisplayEngineDxe.inf
   MdeModulePkg/Universal/SetupBrowserDxe/SetupBrowserDxe.inf
   MdeModulePkg/Universal/BdsDxe/BdsDxe.inf
   MdeModulePkg/Application/UiApp/UiApp.inf {
     <LibraryClasses>
+      NULL|MdeModulePkg/Library/BootDiscoveryPolicyUiLib/BootDiscoveryPolicyUiLib.inf
       NULL|MdeModulePkg/Library/DeviceManagerUiLib/DeviceManagerUiLib.inf
       NULL|MdeModulePkg/Library/BootManagerUiLib/BootManagerUiLib.inf
       NULL|MdeModulePkg/Library/BootMaintenanceManagerUiLib/BootMaintenanceManagerUiLib.inf
@@ -377,10 +405,23 @@
   Platform/ARM/Drivers/FdtPlatformDxe/FdtPlatformDxe.inf {
     <LibraryClasses>
       BdsLib|Platform/ARM/Library/BdsLib/BdsLib.inf
+      FdtLib|MdePkg/Library/BaseFdtLib/BaseFdtLib.inf
   }
 
   # SCMI Driver
   ArmPkg/Drivers/ArmScmiDxe/ArmScmiDxe.inf
+
+  #
+  # Rng
+  #
+  SecurityPkg/RandomNumberGenerator/RngDxe/RngDxe.inf {
+    <LibraryClasses>
+    !if $(ENABLE_UNSAFE_RNGLIB) == TRUE
+      RngLib|MdeModulePkg/Library/BaseRngLibTimerLib/BaseRngLibTimerLib.inf
+    !else
+      RngLib|MdePkg/Library/BaseRngLib/BaseRngLib.inf
+    !endif
+  }
 
 [Components.AARCH64]
   #
