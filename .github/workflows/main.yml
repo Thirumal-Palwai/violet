@@ -27,6 +27,7 @@ jobs:
           cd "$curdir"
           ./firstrun.sh
           chmod +x ../edk2/BaseTools/BinWrappers/PosixLike/build
+          chmod +x ../edk2/BaseTools/Source/Python/Trim/Trim.py
           ./build.sh
 
       - name: Upload a Build Artifact
