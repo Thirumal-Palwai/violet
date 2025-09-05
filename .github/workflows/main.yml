@@ -20,16 +20,8 @@ jobs:
       - name: Build an image
         working-directory: ./edk2-lavender
         run: |
-          chmod +x -R .
-          chmod +x ../edk2/BaseTools/BinWrappers/PosixLike/TianoCompress
-          curdir="$PWD"
-          cd ..
-          cd "$curdir"
+          chmod +x -R ../.
           ./firstrun.sh
-          chmod +x ../edk2/BaseTools/BinWrappers/PosixLike/build
-          chmod +x ../edk2/BaseTools/Source/Python/Trim/Trim.py
-          chmod +x ../edk2/BaseTools/BinWrappers/PosixLike/Trim
-          chmod +x ../edk2/BaseTools/BinPipWrappers/PosixLike/Trim
           ./build.sh
 
       - name: Upload a Build Artifact
