@@ -28,6 +28,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           path: edk2-lavender/uefi.img
+          name: uefi-lavender.img
 
       - name: Build an image
         working-directory: ./edk2-violet
@@ -40,3 +41,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           path: edk2-violet/uefi.img
+          name: uefi.img
