@@ -21,6 +21,7 @@ jobs:
         working-directory: ./edk2-lavender
         run: |
           chmod +x -R .
+          chmod +x ../edk2/BaseTools/BinWrappers/PosixLike/TianoCompress
           curdir="$PWD"
           cd ..
           cd "$curdir"
