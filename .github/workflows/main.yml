@@ -15,7 +15,7 @@ jobs:
       - name: Install required packages
         run: |
             sudo apt update
-            sudo apt install -y build-essential uuid-dev iasl git nasm gcc-aarch64-linux-gnu bc
+            sudo apt install -y build-essential uuid-dev iasl git nasm gcc-aarch64-linux-gnu bc abootimg
 
       - name: Build an image
         working-directory: ./edk2-lavender
@@ -28,3 +28,15 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           path: edk2-lavender/uefi.img
+
+      - name: Build an image
+        working-directory: ./edk2-violet
+        run: |
+          chmod +x -R ../.
+          ./firstrun.sh
+          ./build.sh
+
+      - name: Upload a Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          path: edk2-violet/uefi.img
