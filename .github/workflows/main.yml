@@ -28,6 +28,8 @@ jobs:
           ./firstrun.sh
           chmod +x ../edk2/BaseTools/BinWrappers/PosixLike/build
           chmod +x ../edk2/BaseTools/Source/Python/Trim/Trim.py
+          chmod +x ../edk2/BaseTools/BinWrappers/PosixLike/Trim
+          chmod +x ../edk2/BaseTools/BinPipWrappers/PosixLike/Trim
           ./build.sh
 
       - name: Upload a Build Artifact
